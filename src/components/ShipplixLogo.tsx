@@ -1,4 +1,5 @@
 import React from "react";
+import { MessageSquare } from "lucide-react";
 
 interface ShipplixLogoProps {
   variant?: "full" | "horizontal" | "icon" | "banner";
@@ -48,9 +49,15 @@ export default function ShipplixLogo({
       </p>
 
       {/* Official Contact Phone Number */}
-      <p className="text-[#032B73] font-black text-base sm:text-xl tracking-wide font-mono mt-1.5 bg-[#FFD700]/10 px-4 py-1.5 rounded-full border border-[#FFD700]/30 shadow-xs">
-        09168273513
-      </p>
+      <a 
+        href="https://wa.me/2349168273513" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="text-[#032B73] hover:text-[#032B73]/90 transition-all duration-200 font-bold text-sm sm:text-base mt-3 bg-[#FFD700] hover:bg-[#FFD700]/90 px-5 py-2.5 rounded-full border border-[#FFD700] shadow-md inline-flex items-center gap-2 select-none"
+      >
+        <MessageSquare className="h-4 w-4 text-[#032B73]" />
+        <span>Contact us on WhatsApp</span>
+      </a>
     </div>
   );
 }

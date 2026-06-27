@@ -338,73 +338,13 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
             </div>
           </div>
 
-          {/* Timeline & Customer Notification History row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Milestone Timeline (2/3 col on desktop) */}
-            <div className="lg:col-span-2">
-              <Timeline 
-                currentMilestoneIndex={shipment.currentMilestoneIndex} 
-                milestoneHistory={shipment.milestoneHistory}
-                isPaused={shipment.isPaused}
-              />
-            </div>
-
-            {/* Notification History (1/3 col on desktop) */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col h-fit">
-              <h3 className="text-lg font-bold text-[#032B73] border-b border-gray-100 pb-3 mb-4 flex items-center space-x-2">
-                <Send className="h-5 w-5 text-blue-600" />
-                <span>Security Notifications</span>
-              </h3>
-              
-              <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-                Security-verified notifications dispatched to customer contact routes (Email and simulated SMS/WhatsApp):
-              </p>
-
-              {shipment.notifications && shipment.notifications.length > 0 ? (
-                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                  {shipment.notifications.slice().reverse().map((notif) => (
-                    <div 
-                      key={notif.id}
-                      className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs"
-                    >
-                      <div className="flex justify-between items-start mb-1.5">
-                        <span className="font-mono font-bold text-gray-400">
-                          {new Date(notif.timestamp).toLocaleDateString("en-US", {
-                            day: "2-digit",
-                            month: "short"
-                          })}
-                        </span>
-                        <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                          notif.type === "email" 
-                            ? "bg-blue-100 text-blue-800" 
-                            : "bg-emerald-100 text-emerald-800"
-                        }`}>
-                          {notif.type}
-                        </span>
-                      </div>
-                      
-                      <p className="text-gray-900 font-bold mb-1">
-                        {notif.milestoneName} Alert
-                      </p>
-                      
-                      <p className="text-[10px] text-gray-500 font-mono break-all mb-1">
-                        Sent to: {notif.recipient}
-                      </p>
-                      
-                      <span className="inline-flex items-center text-[10px] text-emerald-600 font-bold font-mono">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Dispatched Successfully
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-400 font-mono text-xs">
-                  <p className="mb-2">No verification alerts logged yet.</p>
-                  <p className="text-[10px] text-gray-400/80">Alerts populate instantly when admins update transit stages.</p>
-                </div>
-              )}
-            </div>
+          {/* Timeline Row */}
+          <div className="max-w-4xl mx-auto w-full">
+            <Timeline 
+              currentMilestoneIndex={shipment.currentMilestoneIndex} 
+              milestoneHistory={shipment.milestoneHistory}
+              isPaused={shipment.isPaused}
+            />
           </div>
 
         </div>

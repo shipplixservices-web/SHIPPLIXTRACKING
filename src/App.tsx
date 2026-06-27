@@ -80,10 +80,15 @@ export default function App() {
                   <Mail className="h-4 w-4 text-[#FFD700]" />
                   <span>shipplixservices@gmail.com</span>
                 </p>
-                <p className="flex items-center space-x-2">
-                  <MessageSquare className="h-4 w-4 text-emerald-400" />
+                <a 
+                  href="https://wa.me/2349168273513"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-2 hover:opacity-80 transition-opacity w-fit"
+                >
+                  <MessageSquare className="h-4 w-4 text-emerald-400 animate-pulse" />
                   <span className="text-emerald-400 font-bold">WhatsApp: +234 916 827 3513</span>
-                </p>
+                </a>
               </div>
             </div>
 
