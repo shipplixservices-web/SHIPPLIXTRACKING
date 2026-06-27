@@ -94,13 +94,6 @@ export default function App() {
             <p className="text-[10px] text-gray-500 font-mono">
               © {new Date().getFullYear()} SHIPPLIX SERVICES CO. LTD. All rights reserved. Registered International Logistics forwarder with local airport cargo clearance credentials.
             </p>
-            <div className="flex space-x-4 text-[10px] text-gray-400 font-mono uppercase tracking-widest">
-              <a href="#" className="hover:text-[#FFD700] transition-colors">Privacy Charter</a>
-              <span>•</span>
-              <a href="#" className="hover:text-[#FFD700] transition-colors">Terms of Carriage</a>
-              <span>•</span>
-              <a href="#" className="hover:text-[#FFD700] transition-colors">Aero-Security Audit</a>
-            </div>
           </div>
         </div>
       </footer>
