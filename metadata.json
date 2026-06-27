@@ -1,0 +1,6 @@
+{
+  "name": "Shipplix Shipment Tracking Portal",
+  "description": "Premium shipment tracking portal and admin management dashboard for Shipplix, featuring real-time interactive tracking timelines, shipment statistics, status updates, and map visualization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
