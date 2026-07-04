@@ -418,12 +418,12 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
     const matchesDest = filterDestination ? s.destinationCountry.toLowerCase() === filterDestination.toLowerCase() : true;
     const matchesService = filterService ? s.serviceType.toLowerCase() === filterService.toLowerCase() : true;
     
-    // Status matching (Delivered index is 16, On Hold checks boolean, In Transit is anything between 1 and 15)
+    // Status matching (Delivered index is 23, On Hold checks boolean, In Transit is anything between 1 and 22)
     let matchesStatus = true;
     if (filterStatus) {
       if (filterStatus === "paused") matchesStatus = s.isPaused;
-      else if (filterStatus === "delivered") matchesStatus = s.currentMilestoneIndex === 16;
-      else if (filterStatus === "transit") matchesStatus = s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 16 && !s.isPaused;
+      else if (filterStatus === "delivered") matchesStatus = s.currentMilestoneIndex === 23;
+      else if (filterStatus === "transit") matchesStatus = s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 23 && !s.isPaused;
       else if (filterStatus === "pending") matchesStatus = s.currentMilestoneIndex === 0;
     }
 
@@ -804,7 +804,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                           {/* Current Status Milestones */}
                           <td className="py-3.5 px-4">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide ${
-                              s.currentMilestoneIndex === 16
+                              s.currentMilestoneIndex === 23
                                 ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                                 : s.isPaused
                                   ? "bg-red-100 text-red-800 border border-red-200 animate-pulse"
@@ -1303,7 +1303,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
             {/* Left: Predefined milestone selectors */}
             <div className="md:col-span-1 space-y-1.5">
               <label className="text-[11px] font-mono font-bold text-gray-500 block uppercase">
-                Select Transit Milestone (1 to 17)
+                Select Transit Milestone (1 to {MILESTONES.length})
               </label>
               
               <div className="border border-gray-200 rounded-lg max-h-[350px] overflow-y-auto divide-y divide-gray-100 shadow-inner">

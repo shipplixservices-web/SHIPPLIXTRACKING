@@ -43,7 +43,7 @@ function getSeedShipments(): Shipment[] {
       bookingDate: "2026-06-24",
       expectedDeliveryDate: "2026-06-29",
       shipmentNotes: "High-value African fabrics, hand-crafted designer Ankara gowns. Keep dry.",
-      currentMilestoneIndex: 4, // Customs Review
+      currentMilestoneIndex: 6, // Customs Review (new list index 6)
       isPaused: false,
       milestoneHistory: [
         {
@@ -53,27 +53,27 @@ function getSeedShipments(): Shipment[] {
           timestamp: formatDate(3, "10:42:00")
         },
         {
-          milestoneIndex: 1,
-          milestoneName: MILESTONES[1].name,
-          description: MILESTONES[1].description,
-          timestamp: formatDate(3, "14:15:00")
-        },
-        {
           milestoneIndex: 2,
           milestoneName: MILESTONES[2].name,
           description: MILESTONES[2].description,
-          timestamp: formatDate(2, "09:30:00")
+          timestamp: formatDate(3, "14:15:00")
         },
         {
           milestoneIndex: 3,
           milestoneName: MILESTONES[3].name,
           description: MILESTONES[3].description,
+          timestamp: formatDate(2, "09:30:00")
+        },
+        {
+          milestoneIndex: 5,
+          milestoneName: MILESTONES[5].name,
+          description: MILESTONES[5].description,
           timestamp: formatDate(2, "16:45:00")
         },
         {
-          milestoneIndex: 4,
-          milestoneName: MILESTONES[4].name,
-          description: MILESTONES[4].description,
+          milestoneIndex: 6,
+          milestoneName: MILESTONES[6].name,
+          description: MILESTONES[6].description,
           timestamp: formatDate(1, "11:20:00")
         }
       ],
@@ -118,11 +118,11 @@ function getSeedShipments(): Shipment[] {
       bookingDate: "2026-06-20",
       expectedDeliveryDate: "2026-06-26",
       shipmentNotes: "Bulk food items (Garri, Yam flour, Egusi, Spices) for distribution.",
-      currentMilestoneIndex: 16, // Delivered
+      currentMilestoneIndex: 23, // Delivered (new list index 23)
       isPaused: false,
-      milestoneHistory: Array.from({ length: 17 }, (_, i) => {
+      milestoneHistory: Array.from({ length: 24 }, (_, i) => {
         // Calculate dynamic timestamps going back from the delivery date
-        const daysAgo = 6 - Math.floor(i * 0.35);
+        const daysAgo = 6 - Math.floor(i * 0.25);
         const hour = 9 + (i % 8);
         return {
           milestoneIndex: i,
@@ -156,7 +156,7 @@ function getSeedShipments(): Shipment[] {
       bookingDate: "2026-06-26",
       expectedDeliveryDate: "2026-07-06",
       shipmentNotes: "Organic cosmetics and hair care oils.",
-      currentMilestoneIndex: 1, // Shipment Verified
+      currentMilestoneIndex: 2, // Shipment Verified (new list index 2)
       isPaused: false,
       milestoneHistory: [
         {
@@ -166,9 +166,9 @@ function getSeedShipments(): Shipment[] {
           timestamp: formatDate(1, "08:15:00")
         },
         {
-          milestoneIndex: 1,
-          milestoneName: MILESTONES[1].name,
-          description: MILESTONES[1].description,
+          milestoneIndex: 2,
+          milestoneName: MILESTONES[2].name,
+          description: MILESTONES[2].description,
           timestamp: formatDate(0, "15:30:00")
         }
       ],
@@ -188,10 +188,10 @@ function getSeedShipments(): Shipment[] {
       bookingDate: "2026-06-23",
       expectedDeliveryDate: "2026-06-27",
       shipmentNotes: "Hand-carved wooden sculptures and art exhibits.",
-      currentMilestoneIndex: 15, // Out for Delivery
+      currentMilestoneIndex: 22, // Out for Delivery (new list index 22)
       isPaused: false,
-      milestoneHistory: Array.from({ length: 16 }, (_, i) => {
-        const daysAgo = 4 - Math.floor(i * 0.25);
+      milestoneHistory: Array.from({ length: 23 }, (_, i) => {
+        const daysAgo = 4 - Math.floor(i * 0.18);
         const hour = 8 + (i % 9);
         return {
           milestoneIndex: i,

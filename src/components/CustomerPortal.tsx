@@ -60,7 +60,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
 
   // Calculate percentage progress for the top simple progress bar
   const progressPercent = shipment 
-    ? Math.round((shipment.currentMilestoneIndex / 16) * 100) 
+    ? Math.min(Math.round((Math.min(shipment.currentMilestoneIndex, 23) / 23) * 100), 100) 
     : 0;
 
   // Format booking/delivery dates beautifully
@@ -196,7 +196,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
             <div className="text-right flex flex-col items-start md:items-end space-y-1 shrink-0">
               <span className="text-xs text-gray-400 font-mono">CURRENT DISPATCH STATUS</span>
               <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-black tracking-wide ${
-                shipment.currentMilestoneIndex === 16
+                shipment.currentMilestoneIndex === 23
                   ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                   : shipment.isPaused
                     ? "bg-red-100 text-red-800 border border-red-200"
@@ -237,13 +237,13 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
               <div className="text-left font-bold text-blue-800">
                 Origin Received
               </div>
-              <div className={`font-bold ${shipment.currentMilestoneIndex >= 4 ? "text-blue-800" : "text-gray-400"}`}>
+              <div className={`font-bold ${shipment.currentMilestoneIndex >= 18 ? "text-blue-800" : "text-gray-400"}`}>
                 Customs Cleared
               </div>
-              <div className={`font-bold ${shipment.currentMilestoneIndex >= 10 ? "text-blue-800" : "text-gray-400"}`}>
+              <div className={`font-bold ${shipment.currentMilestoneIndex >= 13 ? "text-blue-800" : "text-gray-400"}`}>
                 In Transit Flight
               </div>
-              <div className={`text-right font-bold ${shipment.currentMilestoneIndex === 16 ? "text-emerald-700" : "text-gray-400"}`}>
+              <div className={`text-right font-bold ${shipment.currentMilestoneIndex === 23 ? "text-emerald-700" : "text-gray-400"}`}>
                 Delivered
               </div>
             </div>

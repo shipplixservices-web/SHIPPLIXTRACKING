@@ -49,67 +49,183 @@ export const MILESTONES = [
     description: "Your package has been received at the Shipplix processing center and is awaiting verification."
   },
   {
+    name: "Shipment Verification Queue",
+    description: "Your shipment is currently in the verification queue and will be processed in the order received."
+  },
+  {
     name: "Shipment Verified",
-    description: "The shipment paperwork and parcel contents have been verified by Shipplix export experts."
+    description: "Your shipment details and destination information have been verified successfully."
   },
   {
     name: "Packaging & Consolidation",
-    description: "Your package has been securely repacked and consolidated for international transit."
+    description: "Your package is being prepared and consolidated with other outbound shipments for secure transportation."
+  },
+  {
+    name: "Cargo Manifest Preparation",
+    description: "Your shipment information is being added to the export cargo manifest before regulatory processing."
   },
   {
     name: "Regulatory Inspection",
-    description: "The shipment has passed local export regulatory inspections and is approved for export customs."
+    description: "Your shipment is undergoing mandatory inspection and clearance procedures by relevant regulatory agencies."
   },
   {
     name: "Customs Review",
-    description: "Customs authorities have reviewed the shipment details and granted the export permit."
+    description: "Your shipment has been submitted for customs review and export clearance."
   },
   {
     name: "Airline Security Screening",
-    description: "Cargo security screening has been completed successfully at the airport warehouse."
+    description: "The shipment has successfully completed security screening at the airline cargo terminal."
   },
   {
     name: "Airline Cargo Processing",
-    description: "The airline cargo handlers have processed the consignment at the terminal."
+    description: "The airline cargo handlers are processing the shipment for flight staging."
   },
   {
     name: "Export Warehouse Processing",
-    description: "The shipment is currently staged in the export terminal warehouse awaiting flight loading."
+    description: "The shipment has been staged in the export terminal warehouse and is awaiting loading."
   },
   {
     name: "Flight Allocation",
-    description: "Flight routing has been secured and confirmed with the partner international air carrier."
+    description: "Your shipment has been allocated to a specific outbound flight route."
+  },
+  {
+    name: "Flight Confirmation",
+    description: "The flight route and cargo space for your shipment have been fully confirmed by the airline."
   },
   {
     name: "Cargo Loading",
-    description: "Your package is securely loaded into the air cargo container for flight departure."
+    description: "Your cargo has been securely loaded into the aircraft container and prepared for departure."
   },
   {
     name: "International Departure",
-    description: "The flight carrying your shipment has departed from the origin airport."
+    description: "The flight carrying your shipment has departed from the origin hub."
   },
   {
     name: "Transit Processing",
-    description: "The shipment is processing through an international transit hub."
+    description: "The shipment is being processed through an intermediate international transit hub."
+  },
+  {
+    name: "Transit Hub Processing",
+    description: "The cargo is undergoing sorting and transfer at the international transit facility."
   },
   {
     name: "Destination Arrival",
-    description: "The flight has arrived safely at the destination airport terminal."
+    description: "The flight carrying your shipment has landed safely at the destination airport terminal."
   },
   {
     name: "Destination Customs Clearance",
-    description: "The shipment has cleared inbound customs at the destination country and is handed over to local logistics."
+    description: "Your shipment is undergoing customs clearance and inspection at the destination port."
+  },
+  {
+    name: "Import Release",
+    description: "Inbound customs has released the shipment and it has been handed over to our local delivery network."
+  },
+  {
+    name: "Final Sorting",
+    description: "The shipment is undergoing final sorting at the regional distribution facility."
   },
   {
     name: "Local Distribution Processing",
-    description: "The shipment is being processed and sorted at the regional Shipplix delivery hub."
+    description: "The package has been processed and is staged at the local distribution center."
+  },
+  {
+    name: "Delivery Scheduling",
+    description: "Your delivery has been scheduled and assigned to a local delivery courier."
   },
   {
     name: "Out for Delivery",
-    description: "The shipment is in the vehicle with a courier and will be delivered today."
+    description: "The shipment has been loaded into the delivery vehicle and is out for final delivery today."
   },
   {
     name: "Delivered",
     description: "Your shipment has been successfully delivered and signed for."
+  },
+  {
+    name: "Shipment On Hold",
+    description: "The shipment is currently held at our facility or terminal for verification or administrative requirements."
+  },
+  {
+    name: "Customs Hold",
+    description: "The shipment has been put on temporary hold by customs authorities for further documentation or inspection."
+  },
+  {
+    name: "Regulatory Delay",
+    description: "Inbound or outbound regulatory checks have flagged this shipment, causing a temporary delay."
+  },
+  {
+    name: "Address Verification Required",
+    description: "The consignee address is incomplete or incorrect. Delivery is paused pending address confirmation."
+  },
+  {
+    name: "Contact Pending",
+    description: "We are currently attempting to contact the sender or receiver to resolve a delivery or clearance issue."
+  },
+  {
+    name: "Payment Pending",
+    description: "Outstanding duties, taxes, or shipping fees must be settled before this shipment can proceed to delivery."
+  },
+  {
+    name: "Dangerous Goods Clearance",
+    description: "The shipment is undergoing specialized inspection for safety and regulatory compliance regarding potential hazardous materials."
+  },
+  {
+    name: "Inspection Queue",
+    description: "The cargo is currently queued for visual, physical, or x-ray inspection by customs agents."
+  },
+  {
+    name: "Weather Delay",
+    description: "Adverse weather conditions at the flight transit hub or destination area have temporarily delayed transport."
+  },
+  {
+    name: "Carrier Delay",
+    description: "The airline carrier is experiencing technical or operational scheduling issues, delaying departure or arrival."
+  },
+  {
+    name: "Damage Reported",
+    description: "An inspection of the exterior packing has flagged minor damage. Contents are being inspected for safety."
+  },
+  {
+    name: "Misrouted Cargo Recovery",
+    description: "The parcel was temporarily misrouted but has been successfully intercepted and is being rerouted to its correct destination."
+  },
+  {
+    name: "Terminal Congestion",
+    description: "The destination or transit airport terminal is experiencing high cargo volumes, causing processing delays."
+  },
+  {
+    name: "Delivery Rescheduled",
+    description: "The delivery attempt was rescheduled due to recipient absence, business closure, or request."
+  },
+  {
+    name: "Inbound Customs Handover",
+    description: "The cargo has been handed over to destination customs authorities for final clearance."
+  },
+  {
+    name: "Agricultural Inspection",
+    description: "The cargo is undergoing mandatory bio-security or agricultural clearance checks."
+  },
+  {
+    name: "Clearance Delay",
+    description: "Inbound clearance processing is taking longer than expected due to customs backlog or additional reviews."
+  },
+  {
+    name: "Refused by Recipient",
+    description: "The receiver refused to accept the package. It is being held at the local depot for sender instructions."
+  },
+  {
+    name: "Rerouting in Progress",
+    description: "The shipment is being rerouted to an alternative destination or address per sender instructions."
+  },
+  {
+    name: "Return to Sender",
+    description: "The shipment cannot be cleared or delivered and has been initiated for return to the origin sender hub."
+  },
+  {
+    name: "Abandoned Cargo",
+    description: "No contact or clearance resolution was reached within the legal period, and the cargo is declared abandoned."
+  },
+  {
+    name: "Shipment Closed",
+    description: "The tracking record is closed and archived after final resolution or delivery completion."
   }
 ];

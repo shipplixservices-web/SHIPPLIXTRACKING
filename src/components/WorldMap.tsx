@@ -4,7 +4,7 @@ import { Globe, Plane, MapPin } from "lucide-react";
 interface WorldMapProps {
   origin: string; // e.g., "Nigeria"
   destination: string; // e.g., "United States", "United Kingdom", "Canada"
-  currentMilestoneIndex: number; // 0 to 16
+  currentMilestoneIndex: number; // 0 to 45
   isPaused?: boolean;
   portGateway?: string;
 }
@@ -70,8 +70,8 @@ export default function WorldMap({ origin, destination, currentMilestoneIndex, i
 
   // Calculate cargo icon progress along the curve (from 0 to 1)
   const progress = useMemo(() => {
-    // 17 milestones total (0 to 16)
-    return Math.min(Math.max(currentMilestoneIndex / 16, 0), 1);
+    // Standard flow is 24 milestones total (0 to 23 is Delivered)
+    return Math.min(Math.max(currentMilestoneIndex / 23, 0), 1);
   }, [currentMilestoneIndex]);
 
   // Calculate the cubic bezier curve points for natural visual arcs

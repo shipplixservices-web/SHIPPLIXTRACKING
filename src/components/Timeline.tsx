@@ -46,7 +46,7 @@ export default function Timeline({ currentMilestoneIndex, milestoneHistory, isPa
         </div>
         <div className="flex items-center space-x-2 text-xs font-mono bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-100">
           <Clock className="h-3.5 w-3.5" />
-          <span>{milestoneHistory.length} of 17 Milestones Completed</span>
+          <span>{milestoneHistory.length} of {MILESTONES.length} Milestones Completed</span>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export default function Timeline({ currentMilestoneIndex, milestoneHistory, isPa
         <div 
           className="absolute left-[15px] sm:left-[19px] top-4 w-[3px] bg-blue-600 rounded-full transition-all duration-700"
           style={{
-            height: `calc(${(currentMilestoneIndex / 16) * 100}% - 4px)`
+            height: `calc(${(currentMilestoneIndex / (MILESTONES.length - 1)) * 100}% - 4px)`
           }}
         />
 
