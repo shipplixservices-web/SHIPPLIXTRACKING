@@ -96,9 +96,21 @@ export default function App() {
 
           {/* Lower Copyright Row */}
           <div className="border-t border-gray-800 mt-12 pt-6 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-4">
-            <p className="text-[10px] text-gray-500 font-mono">
+            <p className="text-[10px] text-gray-500 font-mono max-w-2xl">
               © {new Date().getFullYear()} SHIPPLIX SERVICES CO. LTD. All rights reserved. Registered International Logistics forwarder with local airport cargo clearance credentials.
             </p>
+            <button
+              id="nav-admin-btn"
+              onClick={() => setCurrentView("admin")}
+              className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 shrink-0 ${
+                currentView === "admin"
+                  ? "bg-[#FFD700] text-[#032B73] font-bold shadow-md scale-102"
+                  : "bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white"
+              }`}
+            >
+              <Shield className="h-4.5 w-4.5" />
+              <span>Admin Panel</span>
+            </button>
           </div>
         </div>
       </footer>
