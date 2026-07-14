@@ -74,7 +74,7 @@ function getSeedShipments(): Shipment[] {
           id: "notif-1",
           timestamp: formatDate(3, "10:42:00"),
           type: "email",
-          recipient: "services@shipplix.com",
+          recipient: "shipplixservices@gmail.com",
           milestoneName: "Shipment Received",
           status: "sent"
         },
@@ -82,7 +82,7 @@ function getSeedShipments(): Shipment[] {
           id: "notif-2",
           timestamp: formatDate(2, "16:45:00"),
           type: "email",
-          recipient: "services@shipplix.com",
+          recipient: "shipplixservices@gmail.com",
           milestoneName: "Regulatory Inspection",
           status: "sent"
         },
@@ -127,7 +127,7 @@ function getSeedShipments(): Shipment[] {
           id: "notif-delivered-email",
           timestamp: formatDate(1, "15:30:00"),
           type: "email",
-          recipient: "services@shipplix.com",
+          recipient: "shipplixservices@gmail.com",
           milestoneName: "Delivered",
           status: "sent"
         }
@@ -507,7 +507,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
           id: `notif-email-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           timestamp: nowStr,
           type: "email",
-          recipient: "services@shipplix.com",
+          recipient: "shipplixservices@gmail.com",
           milestoneName,
           status: "sent"
         },
@@ -680,7 +680,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
           id: `notif-email-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           timestamp,
           type: "email",
-          recipient: "services@shipplix.com",
+          recipient: "shipplixservices@gmail.com",
           milestoneName,
           status: "sent"
         },
@@ -917,7 +917,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
               <input
                 id="admin-email-input"
                 type="text"
-                placeholder="e.g. services@shipplix.com"
+                placeholder="e.g. shipplixservices@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="block w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#032B73]"
@@ -1809,7 +1809,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                     ADVANCING TO STAGE {milestoneUpdate.milestoneIndex + 1}: {MILESTONES[milestoneUpdate.milestoneIndex].name}
                   </h4>
                   <p className="text-xs text-blue-700 leading-normal">
-                    This selection advances the customer timeline. It generates simulated dispatch security email to <strong>services@shipplix.com</strong> and WhatsApp API updates to the consignee phone contact.
+                    This selection advances the customer timeline. It generates simulated dispatch security email to <strong>shipplixservices@gmail.com</strong> and WhatsApp API updates to the consignee phone contact.
                   </p>
                 </div>
 
@@ -1943,7 +1943,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
             <div className="bg-slate-900 text-slate-300 font-mono text-[10px] p-4 rounded-lg overflow-y-auto max-h-[150px] leading-relaxed space-y-1 border border-slate-950">
               <p className="text-slate-500">[2026-06-27 01:27:36] - SERVER - Shipplix Logistics Port 3000 online.</p>
               <p className="text-emerald-400">[2026-06-27 01:27:38] - SECURE - Loaded 4 records successfully from shipments.json.</p>
-              <p className="text-blue-400">[2026-06-27 01:28:10] - AUTH - Session authorized token shipplix-jwt-token-hash-2026-admin-access for services@shipplix.com.</p>
+              <p className="text-blue-400">[2026-06-27 01:28:10] - AUTH - Session authorized token shipplix-jwt-token-hash-2026-admin-access for shipplixservices@gmail.com.</p>
               <p className="text-slate-500">[2026-06-27 01:28:15] - SYSTEM - Automatic background log rotations verified (Status: Green).</p>
             </div>
           </div>

@@ -17,6 +17,12 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 flex flex-col selection:bg-[#FFD700] selection:text-[#032B73]">
       
+      {/* Universal Shipplix Branded Header / Info bar */}
+      <div className="bg-[#FFD700] text-[#032B73] py-2 px-4 sm:px-6 lg:px-8 text-center text-xs font-black tracking-widest uppercase flex items-center justify-center space-x-2 border-b border-[#032B73]/25 z-40 select-none">
+        <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />
+        <span>🔴 NEIGHBORHOOD CONSIGNMENT CARGO BATCH CLOSING SOON! NEXT FLIGHT DEPARTS FRIDAY 15:00 UTC</span>
+      </div>
+
       {/* Main branded Navigation Bar */}
       <Navbar currentView={currentView} onViewChange={setCurrentView} />
 
@@ -72,7 +78,7 @@ export default function App() {
               <div className="space-y-2 text-gray-400">
                 <p className="flex items-center space-x-2">
                   <Mail className="h-4 w-4 text-[#FFD700]" />
-                  <span>services@shipplix.com</span>
+                  <span>shipplixservices@gmail.com</span>
                 </p>
                 <a 
                   href="https://wa.me/2349168273513"
@@ -90,21 +96,9 @@ export default function App() {
 
           {/* Lower Copyright Row */}
           <div className="border-t border-gray-800 mt-12 pt-6 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-4">
-            <p className="text-[10px] text-gray-500 font-mono max-w-2xl">
+            <p className="text-[10px] text-gray-500 font-mono">
               © {new Date().getFullYear()} SHIPPLIX SERVICES CO. LTD. All rights reserved. Registered International Logistics forwarder with local airport cargo clearance credentials.
             </p>
-            <button
-              id="nav-admin-btn"
-              onClick={() => setCurrentView("admin")}
-              className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 shrink-0 ${
-                currentView === "admin"
-                  ? "bg-[#FFD700] text-[#032B73] font-bold shadow-md scale-102"
-                  : "bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white"
-              }`}
-            >
-              <Shield className="h-4.5 w-4.5" />
-              <span>Admin Panel</span>
-            </button>
           </div>
         </div>
       </footer>

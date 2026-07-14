@@ -85,7 +85,7 @@ function getSeedShipments(): Shipment[] {
           id: "notif-1",
           timestamp: formatDate(3, "10:42:00"),
           type: "email",
-          recipient: "services@shipplix.com",
+          recipient: "shipplixservices@gmail.com",
           milestoneName: "Shipment Received",
           status: "sent"
         },
@@ -93,7 +93,7 @@ function getSeedShipments(): Shipment[] {
           id: "notif-2",
           timestamp: formatDate(2, "16:45:00"),
           type: "email",
-          recipient: "services@shipplix.com",
+          recipient: "shipplixservices@gmail.com",
           milestoneName: "Regulatory Inspection",
           status: "sent"
         },
@@ -139,7 +139,7 @@ function getSeedShipments(): Shipment[] {
           id: "notif-delivered-email",
           timestamp: formatDate(1, "15:30:00"),
           type: "email",
-          recipient: "services@shipplix.com",
+          recipient: "shipplixservices@gmail.com",
           milestoneName: "Delivered",
           status: "sent"
         }
@@ -265,7 +265,7 @@ function triggerNotification(shipment: Shipment, milestoneName: string): Notific
     id: `notif-email-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     timestamp: new Date().toISOString(),
     type: "email",
-    recipient: "services@shipplix.com", // Simulated client profile email
+    recipient: "shipplixservices@gmail.com", // Simulated client profile email
     milestoneName,
     status: "sent"
   };
@@ -289,8 +289,8 @@ function triggerNotification(shipment: Shipment, milestoneName: string): Notific
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
   
-  // Accepting services@shipplix.com or high-security custom admin username
-  const isValidUser = (email === "services@shipplix.com" || email === "shipplix_director_ops");
+  // Accepting shipplixservices@gmail.com or high-security custom admin username
+  const isValidUser = (email === "shipplixservices@gmail.com" || email === "shipplix_director_ops");
   const isValidPassword = (password === "Sh1ppL1x#Op_918273_SecUrE");
   
   if (isValidUser && isValidPassword) {
@@ -298,7 +298,7 @@ app.post("/api/login", (req, res) => {
       success: true,
       token: `shipplix-jwt-token-hash-2026-admin-access`,
       user: {
-        email: email === "shipplix_director_ops" ? "services@shipplix.com" : email,
+        email: email === "shipplix_director_ops" ? "shipplixservices@gmail.com" : email,
         role: "administrator",
         name: "Shipplix Operations Admin"
       }

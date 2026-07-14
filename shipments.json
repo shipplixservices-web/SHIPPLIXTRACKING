@@ -27,7 +27,7 @@
         "id": "notif-email-1784029034997-618",
         "timestamp": "2026-07-14T11:37:14.997Z",
         "type": "email",
-        "recipient": "services@shipplix.com",
+        "recipient": "shipplixservices@gmail.com",
         "milestoneName": "Shipment Received",
         "status": "sent"
       },
@@ -96,7 +96,7 @@
         "id": "notif-1",
         "timestamp": "2026-06-24T10:42:00",
         "type": "email",
-        "recipient": "services@shipplix.com",
+        "recipient": "shipplixservices@gmail.com",
         "milestoneName": "Shipment Received",
         "status": "sent"
       },
@@ -104,7 +104,7 @@
         "id": "notif-2",
         "timestamp": "2026-06-25T16:45:00",
         "type": "email",
-        "recipient": "services@shipplix.com",
+        "recipient": "shipplixservices@gmail.com",
         "milestoneName": "Regulatory Inspection",
         "status": "sent"
       },
@@ -285,7 +285,7 @@
         "id": "notif-delivered-email",
         "timestamp": "2026-06-26T15:30:00",
         "type": "email",
-        "recipient": "services@shipplix.com",
+        "recipient": "shipplixservices@gmail.com",
         "milestoneName": "Delivered",
         "status": "sent"
       }

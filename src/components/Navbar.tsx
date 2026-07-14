@@ -1,5 +1,5 @@
 import React from "react";
-import { Search } from "lucide-react";
+import { Shield, Search, ChevronRight } from "lucide-react";
 
 interface NavbarProps {
   currentView: "customer" | "admin";
@@ -12,12 +12,11 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo and Branding */}
-          <a 
-            href="https://shipplix.com"
-            aria-label="Go to Shipplix Home Page"
-            className="flex items-center cursor-pointer group outline-none focus-visible:ring-2 focus-visible:ring-[#FFD700] rounded-xl"
+          <div 
+            className="flex items-center cursor-pointer group"
+            onClick={() => onViewChange("customer")}
           >
-            <div className="flex items-center bg-white/5 hover:bg-white/10 px-4 py-2.5 rounded-xl transition-all duration-200 border border-white/5 hover:border-white/15 group-hover:scale-[1.01] active:scale-[0.99]">
+            <div className="flex items-center bg-white/5 hover:bg-white/10 px-4 py-2.5 rounded-xl transition-all border border-white/5 hover:border-white/15">
               <div className="flex flex-col">
                 <span className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-none select-none">
                   Shipplix
@@ -27,7 +26,7 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
                 </span>
               </div>
             </div>
-          </a>
+          </div>
 
           {/* Nav Links */}
           <div className="flex items-center space-x-3 sm:space-x-4">
@@ -42,6 +41,19 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
             >
               <Search className="h-4.5 w-4.5" />
               <span>Track Parcel</span>
+            </button>
+
+            <button
+              id="nav-admin-btn"
+              onClick={() => onViewChange("admin")}
+              className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                currentView === "admin"
+                  ? "bg-[#FFD700] text-[#032B73] font-bold shadow-md scale-102"
+                  : "bg-white/10 text-gray-100 hover:bg-white/20 hover:text-white"
+              }`}
+            >
+              <Shield className="h-4.5 w-4.5" />
+              <span>Admin Panel</span>
             </button>
           </div>
         </div>

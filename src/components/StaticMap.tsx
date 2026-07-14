@@ -188,6 +188,9 @@ export default function StaticMap({ shipment }: StaticMapProps) {
             <Compass className="h-5 w-5 animate-[spin_10s_linear_infinite]" />
           </div>
           <div>
+            <h4 className="text-sm font-black tracking-wide uppercase text-[#FFD700]">
+              Static Route Radar
+            </h4>
             <p className="text-[10px] text-slate-400 font-mono">
               HUB DISPATCH VECTOR • LAGOS HUB ➔ {destination.city.toUpperCase()}
             </p>
