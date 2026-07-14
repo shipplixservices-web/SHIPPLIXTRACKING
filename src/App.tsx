@@ -78,7 +78,7 @@ export default function App() {
               <div className="space-y-2 text-gray-400">
                 <p className="flex items-center space-x-2">
                   <Mail className="h-4 w-4 text-[#FFD700]" />
-                  <span>shipplixservices@gmail.com</span>
+                  <span>services@shipplix.com</span>
                 </p>
                 <a 
                   href="https://wa.me/2349168273513"
