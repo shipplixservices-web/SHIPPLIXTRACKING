@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { Shipment, MILESTONES, MilestoneHistoryEntry, NotificationEntry } from "./src/types.js";
+import { supabase, mapDbShipmentToShipment } from "./src/supabaseClient.js";
 
 const app = express();
 const PORT = 3000;
@@ -309,25 +310,53 @@ app.post("/api/login", (req, res) => {
 });
 
 // API: Get all shipments
-app.get("/api/shipments", (req, res) => {
-  const shipments = readDatabase();
-  res.json({ success: true, shipments });
+app.get("/api/shipments", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("shipments")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching shipments from Supabase:", error);
+      return res.status(500).json({ success: false, message: error.message });
+    }
+
+    const shipments = (data || []).map(mapDbShipmentToShipment);
+    res.json({ success: true, shipments });
+  } catch (err: any) {
+    console.error("Exception fetching shipments:", err);
+    res.status(500).json({ success: false, message: err.message || err });
+  }
 });
 
 // API: Get a single shipment by tracking number
-app.get("/api/shipments/:trackingNumber", (req, res) => {
+app.get("/api/shipments/:trackingNumber", async (req, res) => {
   const { trackingNumber } = req.params;
-  const shipments = readDatabase();
-  const shipment = shipments.find(s => s.trackingNumber.toUpperCase() === trackingNumber.trim().toUpperCase());
-  
-  if (!shipment) {
-    return res.status(404).json({
-      success: false,
-      message: `Shipment with tracking number ${trackingNumber} could not be located.`
-    });
+  try {
+    const { data, error } = await supabase
+      .from("shipments")
+      .select("*")
+      .eq("tracking_number", trackingNumber.trim().toUpperCase())
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching single shipment from Supabase:", error);
+      return res.status(500).json({ success: false, message: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: `Shipment with tracking number ${trackingNumber} could not be located.`
+      });
+    }
+
+    res.json({ success: true, shipment: mapDbShipmentToShipment(data) });
+  } catch (err: any) {
+    console.error("Exception fetching single shipment:", err);
+    res.status(500).json({ success: false, message: err.message || err });
   }
-  
-  res.json({ success: true, shipment });
 });
 
 // API: Create new shipment
@@ -536,28 +565,41 @@ app.post("/api/backup", (req, res) => {
 });
 
 // API: Stats endpoint
-app.get("/api/stats", (req, res) => {
-  const shipments = readDatabase();
-  
-  const totalShipments = shipments.length;
-  const deliveredShipments = shipments.filter(s => s.currentMilestoneIndex === 16).length;
-  const pendingVerification = shipments.filter(s => s.currentMilestoneIndex === 0).length;
-  const inTransit = shipments.filter(s => s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 16).length;
-  
-  // Calculate today's bookings (June 27, 2026 in context, or general calendar date)
-  const todayStr = "2026-06-27";
-  const todayBookings = shipments.filter(s => s.bookingDate === todayStr).length;
+app.get("/api/stats", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("shipments")
+      .select("*");
 
-  res.json({
-    success: true,
-    stats: {
-      totalShipments,
-      deliveredShipments,
-      inTransit,
-      pendingVerification,
-      todayBookings
+    if (error) {
+      console.error("Error fetching stats from Supabase:", error);
+      return res.status(500).json({ success: false, message: error.message });
     }
-  });
+
+    const shipments = (data || []).map(mapDbShipmentToShipment);
+    
+    const totalShipments = shipments.length;
+    const deliveredShipments = shipments.filter(s => s.currentMilestoneIndex === 23).length; // "Delivered" is index 23
+    const pendingVerification = shipments.filter(s => s.currentMilestoneIndex === 0).length;
+    const inTransit = shipments.filter(s => s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 23).length;
+    
+    const todayStr = "2026-06-27"; // Context reference date
+    const todayBookings = shipments.filter(s => s.bookingDate === todayStr).length;
+
+    res.json({
+      success: true,
+      stats: {
+        totalShipments,
+        deliveredShipments,
+        inTransit,
+        pendingVerification,
+        todayBookings
+      }
+    });
+  } catch (err: any) {
+    console.error("Exception fetching stats:", err);
+    res.status(500).json({ success: false, message: err.message || err });
+  }
 });
 
 // Implement Vite middleware for SPA and static asset delivery

@@ -1,0 +1,484 @@
+[
+  {
+    "trackingNumber": "SPX-TEST-9999",
+    "referenceNumber": "REF-44370011",
+    "senderName": "Test",
+    "receiverName": "Test",
+    "phoneNumber": "123",
+    "originCountry": "Nigeria",
+    "destinationCountry": "United States",
+    "weight": 0.1,
+    "numberOfPackages": 1,
+    "serviceType": "Express",
+    "bookingDate": "2026-07-14",
+    "expectedDeliveryDate": "2026-07-14",
+    "shipmentNotes": "",
+    "currentMilestoneIndex": 0,
+    "milestoneHistory": [
+      {
+        "milestoneIndex": 0,
+        "milestoneName": "Shipment Received",
+        "description": "Your package has been received at the Shipplix processing center and is awaiting verification.",
+        "timestamp": "2026-07-14T11:37:14.997Z"
+      }
+    ],
+    "notifications": [
+      {
+        "id": "notif-email-1784029034997-618",
+        "timestamp": "2026-07-14T11:37:14.997Z",
+        "type": "email",
+        "recipient": "shipplixservices@gmail.com",
+        "milestoneName": "Shipment Received",
+        "status": "sent"
+      },
+      {
+        "id": "notif-wa-1784029034997-192",
+        "timestamp": "2026-07-14T11:37:14.997Z",
+        "type": "whatsapp",
+        "recipient": "123",
+        "milestoneName": "Shipment Received",
+        "status": "sent"
+      }
+    ],
+    "isPaused": false,
+    "portGateway": ""
+  },
+  {
+    "trackingNumber": "SPX-20260625-5522",
+    "referenceNumber": "REF-90823485",
+    "senderName": "Mrs. Adebayo (Fashion Vendor)",
+    "receiverName": "Sarah Jenkins",
+    "phoneNumber": "+1 (415) 555-2671",
+    "originCountry": "Nigeria",
+    "destinationCountry": "United States",
+    "weight": 45.2,
+    "numberOfPackages": 3,
+    "serviceType": "Express",
+    "bookingDate": "2026-06-24",
+    "expectedDeliveryDate": "2026-06-29",
+    "shipmentNotes": "High-value African fabrics, hand-crafted designer Ankara gowns. Keep dry.",
+    "currentMilestoneIndex": 6,
+    "isPaused": false,
+    "milestoneHistory": [
+      {
+        "milestoneIndex": 0,
+        "milestoneName": "Shipment Received",
+        "description": "Your package has been received at the Shipplix processing center and is awaiting verification.",
+        "timestamp": "2026-06-24T10:42:00"
+      },
+      {
+        "milestoneIndex": 2,
+        "milestoneName": "Shipment Verified",
+        "description": "Your shipment details and destination information have been verified successfully.",
+        "timestamp": "2026-06-24T14:15:00"
+      },
+      {
+        "milestoneIndex": 3,
+        "milestoneName": "Packaging & Consolidation",
+        "description": "Your package is being prepared and consolidated with other outbound shipments for secure transportation.",
+        "timestamp": "2026-06-25T09:30:00"
+      },
+      {
+        "milestoneIndex": 5,
+        "milestoneName": "Regulatory Inspection",
+        "description": "Your shipment is undergoing mandatory inspection and clearance procedures by relevant regulatory agencies.",
+        "timestamp": "2026-06-25T16:45:00"
+      },
+      {
+        "milestoneIndex": 6,
+        "milestoneName": "Customs Review",
+        "description": "Your shipment has been submitted for customs review and export clearance.",
+        "timestamp": "2026-06-26T11:20:00"
+      }
+    ],
+    "notifications": [
+      {
+        "id": "notif-1",
+        "timestamp": "2026-06-24T10:42:00",
+        "type": "email",
+        "recipient": "shipplixservices@gmail.com",
+        "milestoneName": "Shipment Received",
+        "status": "sent"
+      },
+      {
+        "id": "notif-2",
+        "timestamp": "2026-06-25T16:45:00",
+        "type": "email",
+        "recipient": "shipplixservices@gmail.com",
+        "milestoneName": "Regulatory Inspection",
+        "status": "sent"
+      },
+      {
+        "id": "notif-3",
+        "timestamp": "2026-06-26T11:20:00",
+        "type": "whatsapp",
+        "recipient": "+1 (415) 555-2671",
+        "milestoneName": "Customs Review",
+        "status": "sent"
+      }
+    ]
+  },
+  {
+    "trackingNumber": "SPX-20260620-1080",
+    "referenceNumber": "REF-29103847",
+    "senderName": "Emeka O. (Wholesaler)",
+    "receiverName": "Richard Sterling",
+    "phoneNumber": "+44 7911 123456",
+    "originCountry": "Nigeria",
+    "destinationCountry": "United Kingdom",
+    "weight": 120.5,
+    "numberOfPackages": 8,
+    "serviceType": "Standard",
+    "bookingDate": "2026-06-20",
+    "expectedDeliveryDate": "2026-06-26",
+    "shipmentNotes": "Bulk food items (Garri, Yam flour, Egusi, Spices) for distribution.",
+    "currentMilestoneIndex": 23,
+    "isPaused": false,
+    "milestoneHistory": [
+      {
+        "milestoneIndex": 0,
+        "milestoneName": "Shipment Received",
+        "description": "Your package has been received at the Shipplix processing center and is awaiting verification.",
+        "timestamp": "2026-06-21T09:15:00"
+      },
+      {
+        "milestoneIndex": 1,
+        "milestoneName": "Shipment Verification Queue",
+        "description": "Your shipment is currently in the verification queue and will be processed in the order received.",
+        "timestamp": "2026-06-21T10:15:00"
+      },
+      {
+        "milestoneIndex": 2,
+        "milestoneName": "Shipment Verified",
+        "description": "Your shipment details and destination information have been verified successfully.",
+        "timestamp": "2026-06-21T11:15:00"
+      },
+      {
+        "milestoneIndex": 3,
+        "milestoneName": "Packaging & Consolidation",
+        "description": "Your package is being prepared and consolidated with other outbound shipments for secure transportation.",
+        "timestamp": "2026-06-21T12:15:00"
+      },
+      {
+        "milestoneIndex": 4,
+        "milestoneName": "Cargo Manifest Preparation",
+        "description": "Your shipment information is being added to the export cargo manifest before regulatory processing.",
+        "timestamp": "2026-06-22T13:15:00"
+      },
+      {
+        "milestoneIndex": 5,
+        "milestoneName": "Regulatory Inspection",
+        "description": "Your shipment is undergoing mandatory inspection and clearance procedures by relevant regulatory agencies.",
+        "timestamp": "2026-06-22T14:15:00"
+      },
+      {
+        "milestoneIndex": 6,
+        "milestoneName": "Customs Review",
+        "description": "Your shipment has been submitted for customs review and export clearance.",
+        "timestamp": "2026-06-22T15:15:00"
+      },
+      {
+        "milestoneIndex": 7,
+        "milestoneName": "Airline Security Screening",
+        "description": "The shipment has successfully completed security screening at the airline cargo terminal.",
+        "timestamp": "2026-06-22T16:15:00"
+      },
+      {
+        "milestoneIndex": 8,
+        "milestoneName": "Airline Cargo Processing",
+        "description": "The airline cargo handlers are processing the shipment for flight staging.",
+        "timestamp": "2026-06-23T09:15:00"
+      },
+      {
+        "milestoneIndex": 9,
+        "milestoneName": "Export Warehouse Processing",
+        "description": "The shipment has been staged in the export terminal warehouse and is awaiting loading.",
+        "timestamp": "2026-06-23T10:15:00"
+      },
+      {
+        "milestoneIndex": 10,
+        "milestoneName": "Flight Allocation",
+        "description": "Your shipment has been allocated to a specific outbound flight route.",
+        "timestamp": "2026-06-23T11:15:00"
+      },
+      {
+        "milestoneIndex": 11,
+        "milestoneName": "Flight Confirmation",
+        "description": "The flight route and cargo space for your shipment have been fully confirmed by the airline.",
+        "timestamp": "2026-06-23T12:15:00"
+      },
+      {
+        "milestoneIndex": 12,
+        "milestoneName": "Cargo Loading",
+        "description": "Your cargo has been securely loaded into the aircraft container and prepared for departure.",
+        "timestamp": "2026-06-24T13:15:00"
+      },
+      {
+        "milestoneIndex": 13,
+        "milestoneName": "International Departure",
+        "description": "The flight carrying your shipment has departed from the origin hub.",
+        "timestamp": "2026-06-24T14:15:00"
+      },
+      {
+        "milestoneIndex": 14,
+        "milestoneName": "Transit Processing",
+        "description": "The shipment is being processed through an intermediate international transit hub.",
+        "timestamp": "2026-06-24T15:15:00"
+      },
+      {
+        "milestoneIndex": 15,
+        "milestoneName": "Transit Hub Processing",
+        "description": "The cargo is undergoing sorting and transfer at the international transit facility.",
+        "timestamp": "2026-06-24T16:15:00"
+      },
+      {
+        "milestoneIndex": 16,
+        "milestoneName": "Destination Arrival",
+        "description": "The flight carrying your shipment has landed safely at the destination airport terminal.",
+        "timestamp": "2026-06-25T09:15:00"
+      },
+      {
+        "milestoneIndex": 17,
+        "milestoneName": "Destination Customs Clearance",
+        "description": "Your shipment is undergoing customs clearance and inspection at the destination port.",
+        "timestamp": "2026-06-25T10:15:00"
+      },
+      {
+        "milestoneIndex": 18,
+        "milestoneName": "Import Release",
+        "description": "Inbound customs has released the shipment and it has been handed over to our local delivery network.",
+        "timestamp": "2026-06-25T11:15:00"
+      },
+      {
+        "milestoneIndex": 19,
+        "milestoneName": "Final Sorting",
+        "description": "The shipment is undergoing final sorting at the regional distribution facility.",
+        "timestamp": "2026-06-25T12:15:00"
+      },
+      {
+        "milestoneIndex": 20,
+        "milestoneName": "Local Distribution Processing",
+        "description": "The package has been processed and is staged at the local distribution center.",
+        "timestamp": "2026-06-26T13:15:00"
+      },
+      {
+        "milestoneIndex": 21,
+        "milestoneName": "Delivery Scheduling",
+        "description": "Your delivery has been scheduled and assigned to a local delivery courier.",
+        "timestamp": "2026-06-26T14:15:00"
+      },
+      {
+        "milestoneIndex": 22,
+        "milestoneName": "Out for Delivery",
+        "description": "The shipment has been loaded into the delivery vehicle and is out for final delivery today.",
+        "timestamp": "2026-06-26T15:15:00"
+      },
+      {
+        "milestoneIndex": 23,
+        "milestoneName": "Delivered",
+        "description": "Your shipment has been successfully delivered and signed for.",
+        "timestamp": "2026-06-26T16:15:00"
+      }
+    ],
+    "notifications": [
+      {
+        "id": "notif-delivered-email",
+        "timestamp": "2026-06-26T15:30:00",
+        "type": "email",
+        "recipient": "shipplixservices@gmail.com",
+        "milestoneName": "Delivered",
+        "status": "sent"
+      }
+    ]
+  },
+  {
+    "trackingNumber": "SPX-20260626-3120",
+    "referenceNumber": "REF-74839210",
+    "senderName": "Ngozi A. (Retailer)",
+    "receiverName": "Amina Yusuf",
+    "phoneNumber": "+1 (647) 555-8392",
+    "originCountry": "Nigeria",
+    "destinationCountry": "Canada",
+    "weight": 12.8,
+    "numberOfPackages": 1,
+    "serviceType": "Economy",
+    "bookingDate": "2026-06-26",
+    "expectedDeliveryDate": "2026-07-06",
+    "shipmentNotes": "Organic cosmetics and hair care oils.",
+    "currentMilestoneIndex": 2,
+    "isPaused": false,
+    "milestoneHistory": [
+      {
+        "milestoneIndex": 0,
+        "milestoneName": "Shipment Received",
+        "description": "Your package has been received at the Shipplix processing center and is awaiting verification.",
+        "timestamp": "2026-06-26T08:15:00"
+      },
+      {
+        "milestoneIndex": 2,
+        "milestoneName": "Shipment Verified",
+        "description": "Your shipment details and destination information have been verified successfully.",
+        "timestamp": "2026-06-27T15:30:00"
+      }
+    ],
+    "notifications": []
+  },
+  {
+    "trackingNumber": "SPX-20260623-2990",
+    "referenceNumber": "REF-43928104",
+    "senderName": "Chinonso Uzor",
+    "receiverName": "Michael Chang",
+    "phoneNumber": "+1 (212) 555-0199",
+    "originCountry": "Nigeria",
+    "destinationCountry": "United States",
+    "weight": 18,
+    "numberOfPackages": 2,
+    "serviceType": "Express",
+    "bookingDate": "2026-06-23",
+    "expectedDeliveryDate": "2026-06-27",
+    "shipmentNotes": "Hand-carved wooden sculptures and art exhibits.",
+    "currentMilestoneIndex": 22,
+    "isPaused": false,
+    "milestoneHistory": [
+      {
+        "milestoneIndex": 0,
+        "milestoneName": "Shipment Received",
+        "description": "Your package has been received at the Shipplix processing center and is awaiting verification.",
+        "timestamp": "2026-06-23T08:45:00"
+      },
+      {
+        "milestoneIndex": 1,
+        "milestoneName": "Shipment Verification Queue",
+        "description": "Your shipment is currently in the verification queue and will be processed in the order received.",
+        "timestamp": "2026-06-23T09:45:00"
+      },
+      {
+        "milestoneIndex": 2,
+        "milestoneName": "Shipment Verified",
+        "description": "Your shipment details and destination information have been verified successfully.",
+        "timestamp": "2026-06-23T10:45:00"
+      },
+      {
+        "milestoneIndex": 3,
+        "milestoneName": "Packaging & Consolidation",
+        "description": "Your package is being prepared and consolidated with other outbound shipments for secure transportation.",
+        "timestamp": "2026-06-23T11:45:00"
+      },
+      {
+        "milestoneIndex": 4,
+        "milestoneName": "Cargo Manifest Preparation",
+        "description": "Your shipment information is being added to the export cargo manifest before regulatory processing.",
+        "timestamp": "2026-06-23T12:45:00"
+      },
+      {
+        "milestoneIndex": 5,
+        "milestoneName": "Regulatory Inspection",
+        "description": "Your shipment is undergoing mandatory inspection and clearance procedures by relevant regulatory agencies.",
+        "timestamp": "2026-06-23T13:45:00"
+      },
+      {
+        "milestoneIndex": 6,
+        "milestoneName": "Customs Review",
+        "description": "Your shipment has been submitted for customs review and export clearance.",
+        "timestamp": "2026-06-24T14:45:00"
+      },
+      {
+        "milestoneIndex": 7,
+        "milestoneName": "Airline Security Screening",
+        "description": "The shipment has successfully completed security screening at the airline cargo terminal.",
+        "timestamp": "2026-06-24T15:45:00"
+      },
+      {
+        "milestoneIndex": 8,
+        "milestoneName": "Airline Cargo Processing",
+        "description": "The airline cargo handlers are processing the shipment for flight staging.",
+        "timestamp": "2026-06-24T16:45:00"
+      },
+      {
+        "milestoneIndex": 9,
+        "milestoneName": "Export Warehouse Processing",
+        "description": "The shipment has been staged in the export terminal warehouse and is awaiting loading.",
+        "timestamp": "2026-06-24T08:45:00"
+      },
+      {
+        "milestoneIndex": 10,
+        "milestoneName": "Flight Allocation",
+        "description": "Your shipment has been allocated to a specific outbound flight route.",
+        "timestamp": "2026-06-24T09:45:00"
+      },
+      {
+        "milestoneIndex": 11,
+        "milestoneName": "Flight Confirmation",
+        "description": "The flight route and cargo space for your shipment have been fully confirmed by the airline.",
+        "timestamp": "2026-06-24T10:45:00"
+      },
+      {
+        "milestoneIndex": 12,
+        "milestoneName": "Cargo Loading",
+        "description": "Your cargo has been securely loaded into the aircraft container and prepared for departure.",
+        "timestamp": "2026-06-25T11:45:00"
+      },
+      {
+        "milestoneIndex": 13,
+        "milestoneName": "International Departure",
+        "description": "The flight carrying your shipment has departed from the origin hub.",
+        "timestamp": "2026-06-25T12:45:00"
+      },
+      {
+        "milestoneIndex": 14,
+        "milestoneName": "Transit Processing",
+        "description": "The shipment is being processed through an intermediate international transit hub.",
+        "timestamp": "2026-06-25T13:45:00"
+      },
+      {
+        "milestoneIndex": 15,
+        "milestoneName": "Transit Hub Processing",
+        "description": "The cargo is undergoing sorting and transfer at the international transit facility.",
+        "timestamp": "2026-06-25T14:45:00"
+      },
+      {
+        "milestoneIndex": 16,
+        "milestoneName": "Destination Arrival",
+        "description": "The flight carrying your shipment has landed safely at the destination airport terminal.",
+        "timestamp": "2026-06-25T15:45:00"
+      },
+      {
+        "milestoneIndex": 17,
+        "milestoneName": "Destination Customs Clearance",
+        "description": "Your shipment is undergoing customs clearance and inspection at the destination port.",
+        "timestamp": "2026-06-26T16:45:00"
+      },
+      {
+        "milestoneIndex": 18,
+        "milestoneName": "Import Release",
+        "description": "Inbound customs has released the shipment and it has been handed over to our local delivery network.",
+        "timestamp": "2026-06-26T08:45:00"
+      },
+      {
+        "milestoneIndex": 19,
+        "milestoneName": "Final Sorting",
+        "description": "The shipment is undergoing final sorting at the regional distribution facility.",
+        "timestamp": "2026-06-26T09:45:00"
+      },
+      {
+        "milestoneIndex": 20,
+        "milestoneName": "Local Distribution Processing",
+        "description": "The package has been processed and is staged at the local distribution center.",
+        "timestamp": "2026-06-26T10:45:00"
+      },
+      {
+        "milestoneIndex": 21,
+        "milestoneName": "Delivery Scheduling",
+        "description": "Your delivery has been scheduled and assigned to a local delivery courier.",
+        "timestamp": "2026-06-26T11:45:00"
+      },
+      {
+        "milestoneIndex": 22,
+        "milestoneName": "Out for Delivery",
+        "description": "The shipment has been loaded into the delivery vehicle and is out for final delivery today.",
+        "timestamp": "2026-06-26T12:45:00"
+      }
+    ],
+    "notifications": []
+  }
+]

@@ -5,10 +5,195 @@ import {
 } from "lucide-react";
 import { Shipment, MILESTONES, DashboardStats } from "../types.js";
 import ShipplixLogo from "./ShipplixLogo.tsx";
-import { supabase } from "../supabaseClient.js";
+import { supabase, mapDbShipmentToShipment } from "../supabaseClient.js";
 
 interface AdminPanelProps {
   onTrackingRequest: (trackingNumber: string) => void;
+}
+
+function getSeedShipments(): Shipment[] {
+  const now = new Date("2026-06-27T01:27:36-07:00");
+  
+  const formatDate = (daysAgo: number, timeStr: string) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - daysAgo);
+    return `${d.toISOString().split('T')[0]}T${timeStr}`;
+  };
+
+  return [
+    {
+      trackingNumber: "SPX-20260625-5522",
+      referenceNumber: "REF-90823485",
+      senderName: "Mrs. Adebayo (Fashion Vendor)",
+      receiverName: "Sarah Jenkins",
+      phoneNumber: "+1 (415) 555-2671",
+      originCountry: "Nigeria",
+      destinationCountry: "United States",
+      weight: 45.2,
+      numberOfPackages: 3,
+      serviceType: "Express",
+      bookingDate: "2026-06-24",
+      expectedDeliveryDate: "2026-06-29",
+      shipmentNotes: "High-value African fabrics, hand-crafted designer Ankara gowns. Keep dry.",
+      currentMilestoneIndex: 6, // Customs Review
+      isPaused: false,
+      milestoneHistory: [
+        {
+          milestoneIndex: 0,
+          milestoneName: MILESTONES[0].name,
+          description: MILESTONES[0].description,
+          timestamp: formatDate(3, "10:42:00")
+        },
+        {
+          milestoneIndex: 2,
+          milestoneName: MILESTONES[2].name,
+          description: MILESTONES[2].description,
+          timestamp: formatDate(3, "14:15:00")
+        },
+        {
+          milestoneIndex: 3,
+          milestoneName: MILESTONES[3].name,
+          description: MILESTONES[3].description,
+          timestamp: formatDate(2, "09:30:00")
+        },
+        {
+          milestoneIndex: 5,
+          milestoneName: MILESTONES[5].name,
+          description: MILESTONES[5].description,
+          timestamp: formatDate(2, "16:45:00")
+        },
+        {
+          milestoneIndex: 6,
+          milestoneName: MILESTONES[6].name,
+          description: MILESTONES[6].description,
+          timestamp: formatDate(1, "11:20:00")
+        }
+      ],
+      notifications: [
+        {
+          id: "notif-1",
+          timestamp: formatDate(3, "10:42:00"),
+          type: "email",
+          recipient: "shipplixservices@gmail.com",
+          milestoneName: "Shipment Received",
+          status: "sent"
+        },
+        {
+          id: "notif-2",
+          timestamp: formatDate(2, "16:45:00"),
+          type: "email",
+          recipient: "shipplixservices@gmail.com",
+          milestoneName: "Regulatory Inspection",
+          status: "sent"
+        },
+        {
+          id: "notif-3",
+          timestamp: formatDate(1, "11:20:00"),
+          type: "whatsapp",
+          recipient: "+1 (415) 555-2671",
+          milestoneName: "Customs Review",
+          status: "sent"
+        }
+      ]
+    },
+    {
+      trackingNumber: "SPX-20260620-1080",
+      referenceNumber: "REF-29103847",
+      senderName: "Emeka O. (Wholesaler)",
+      receiverName: "Richard Sterling",
+      phoneNumber: "+44 7911 123456",
+      originCountry: "Nigeria",
+      destinationCountry: "United Kingdom",
+      weight: 120.5,
+      numberOfPackages: 8,
+      serviceType: "Standard",
+      bookingDate: "2026-06-20",
+      expectedDeliveryDate: "2026-06-26",
+      shipmentNotes: "Bulk food items (Garri, Yam flour, Egusi, Spices) for distribution.",
+      currentMilestoneIndex: 23, // Delivered
+      isPaused: false,
+      milestoneHistory: Array.from({ length: 24 }, (_, i) => {
+        const daysAgo = 6 - Math.floor(i * 0.25);
+        const hour = 9 + (i % 8);
+        return {
+          milestoneIndex: i,
+          milestoneName: MILESTONES[i].name,
+          description: MILESTONES[i].description,
+          timestamp: formatDate(daysAgo, `${hour.toString().padStart(2, '0')}:15:00`)
+        };
+      }),
+      notifications: [
+        {
+          id: "notif-delivered-email",
+          timestamp: formatDate(1, "15:30:00"),
+          type: "email",
+          recipient: "shipplixservices@gmail.com",
+          milestoneName: "Delivered",
+          status: "sent"
+        }
+      ]
+    },
+    {
+      trackingNumber: "SPX-20260626-3120",
+      referenceNumber: "REF-74839210",
+      senderName: "Ngozi A. (Retailer)",
+      receiverName: "Amina Yusuf",
+      phoneNumber: "+1 (647) 555-8392",
+      originCountry: "Nigeria",
+      destinationCountry: "Canada",
+      weight: 12.8,
+      numberOfPackages: 1,
+      serviceType: "Economy",
+      bookingDate: "2026-06-26",
+      expectedDeliveryDate: "2026-07-06",
+      shipmentNotes: "Organic cosmetics and hair care oils.",
+      currentMilestoneIndex: 2, // Shipment Verified
+      isPaused: false,
+      milestoneHistory: [
+        {
+          milestoneIndex: 0,
+          milestoneName: MILESTONES[0].name,
+          description: MILESTONES[0].description,
+          timestamp: formatDate(1, "08:15:00")
+        },
+        {
+          milestoneIndex: 2,
+          milestoneName: MILESTONES[2].name,
+          description: MILESTONES[2].description,
+          timestamp: formatDate(0, "15:30:00")
+        }
+      ],
+      notifications: []
+    },
+    {
+      trackingNumber: "SPX-20260623-2990",
+      referenceNumber: "REF-43928104",
+      senderName: "Chinonso Uzor",
+      receiverName: "Michael Chang",
+      phoneNumber: "+1 (212) 555-0199",
+      originCountry: "Nigeria",
+      destinationCountry: "United States",
+      weight: 18.0,
+      numberOfPackages: 2,
+      serviceType: "Express",
+      bookingDate: "2026-06-23",
+      expectedDeliveryDate: "2026-06-27",
+      shipmentNotes: "Hand-carved wooden sculptures and art exhibits.",
+      currentMilestoneIndex: 22, // Out for Delivery
+      isPaused: false,
+      milestoneHistory: Array.from({ length: 23 }, (_, i) => {
+        const daysAgo = 4 - Math.floor(i * 0.18);
+        const hour = 8 + (i % 9);
+        return {
+          milestoneIndex: i,
+          milestoneName: MILESTONES[i].name,
+          description: MILESTONES[i].description,
+          timestamp: formatDate(daysAgo, `${hour.toString().padStart(2, '0')}:45:00`)
+        };
+      }),
+      notifications: []
+    }
+  ];
 }
 
 export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
@@ -119,29 +304,106 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [shipmentsRes, statsRes] = await Promise.all([
-        fetch("/api/shipments"),
-        fetch("/api/stats")
-      ]);
-      const shipmentsData = await shipmentsRes.json();
-      const statsData = await statsRes.json();
+      // Query directly from Supabase
+      const { data: dbShipments, error: shipmentsError } = await supabase
+        .from("shipments")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (shipmentsData.success) {
-        setShipments(shipmentsData.shipments);
-        if (shipmentsData.shipments.length > 0 && !selectedShipment) {
-          setSelectedShipment(shipmentsData.shipments[0]);
-          setMilestoneUpdate({
-            milestoneIndex: shipmentsData.shipments[0].currentMilestoneIndex,
-            customDescription: MILESTONES[shipmentsData.shipments[0].currentMilestoneIndex].description
-          });
+      if (shipmentsError) {
+        throw shipmentsError;
+      }
+
+      let mappedShipments = (dbShipments || []).map(mapDbShipmentToShipment);
+
+      // If database is empty, auto-seed it!
+      if (mappedShipments.length === 0) {
+        console.log("Database is empty. Seeding mock shipments...");
+        const seedShipments = getSeedShipments();
+        
+        const dbSeeds = seedShipments.map(s => ({
+          tracking_number: s.trackingNumber,
+          reference_number: s.referenceNumber,
+          sender_name: s.senderName,
+          receiver_name: s.receiverName,
+          phone_number: s.phoneNumber,
+          origin_country: s.originCountry,
+          destination_country: s.destinationCountry,
+          weight: s.weight,
+          number_of_packages: s.numberOfPackages,
+          service_type: s.serviceType,
+          booking_date: s.bookingDate,
+          expected_delivery_date: s.expectedDeliveryDate,
+          shipment_notes: s.shipmentNotes,
+          current_milestone_index: s.currentMilestoneIndex,
+          milestone_history: s.milestoneHistory,
+          notifications: s.notifications,
+          is_paused: s.isPaused,
+          port_gateway: s.portGateway || ""
+        }));
+
+        const { data: seededData, error: seedError } = await supabase
+          .from("shipments")
+          .insert(dbSeeds)
+          .select();
+
+        if (seedError) {
+          console.error("Error seeding shipments:", seedError);
+        } else if (seededData) {
+          mappedShipments = seededData.map(mapDbShipmentToShipment);
+          console.log("Seeding successful! Seeded rows:", mappedShipments.length);
+          
+          // Seed the shipment_events table too for normalization!
+          const dbEvents = [];
+          for (const s of seededData) {
+            const milestoneHistory = s.milestone_history || [];
+            for (const h of milestoneHistory) {
+              dbEvents.push({
+                shipment_id: s.id,
+                tracking_number: s.tracking_number,
+                milestone_index: h.milestoneIndex,
+                milestone_name: h.milestoneName,
+                description: h.description,
+                timestamp: h.timestamp
+              });
+            }
+          }
+          if (dbEvents.length > 0) {
+            await supabase.from("shipment_events").insert(dbEvents);
+          }
         }
       }
-      if (statsData.success) {
-        setStats(statsData.stats);
+
+      setShipments(mappedShipments);
+
+      if (mappedShipments.length > 0 && !selectedShipment) {
+        setSelectedShipment(mappedShipments[0]);
+        setMilestoneUpdate({
+          milestoneIndex: mappedShipments[0].currentMilestoneIndex,
+          customDescription: MILESTONES[mappedShipments[0].currentMilestoneIndex].description
+        });
       }
-    } catch (err) {
+
+      // Calculate stats directly in the frontend
+      const totalShipments = mappedShipments.length;
+      const deliveredShipments = mappedShipments.filter(s => s.currentMilestoneIndex === 23).length; // Delivered index is 23
+      const pendingVerification = mappedShipments.filter(s => s.currentMilestoneIndex === 0).length;
+      const inTransit = mappedShipments.filter(s => s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 23).length;
+      
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayBookings = mappedShipments.filter(s => s.bookingDate === todayStr).length;
+
+      setStats({
+        totalShipments,
+        deliveredShipments,
+        inTransit,
+        pendingVerification,
+        todayBookings
+      });
+
+    } catch (err: any) {
       console.error("Error fetching dashboard data", err);
-      showSystemMessage("error", "Unable to load dashboard fleet. Check connection.");
+      showSystemMessage("error", `Unable to load dashboard fleet: ${err.message || err}`);
     } finally {
       setLoading(false);
     }
@@ -205,39 +467,130 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
     e.preventDefault();
     setActionLoading("create");
     try {
-      const response = await fetch("/api/shipments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newShipment)
-      });
-      const data = await response.json();
-
-      if (data.success) {
-        showSystemMessage("success", `Shipment ${data.shipment.trackingNumber} registered successfully!`);
-        // Reset form
-        setNewShipment({
-          trackingNumber: "",
-          referenceNumber: "",
-          senderName: "",
-          receiverName: "",
-          phoneNumber: "",
-          originCountry: "Nigeria",
-          destinationCountry: "United States",
-          weight: "10.0",
-          numberOfPackages: "1",
-          serviceType: "Express",
-          bookingDate: new Date().toISOString().split('T')[0],
-          expectedDeliveryDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
-          shipmentNotes: "",
-          portGateway: ""
-        });
-        fetchDashboardData();
-        setActiveTab("fleet");
-      } else {
-        showSystemMessage("error", data.message || "Failed to register shipment.");
+      const trackingNum = newShipment.trackingNumber.trim().toUpperCase();
+      if (!trackingNum) {
+        showSystemMessage("error", "Tracking number is required.");
+        return;
       }
-    } catch (err) {
-      showSystemMessage("error", "Network failure registering shipment.");
+
+      // Check uniqueness
+      const { data: existing, error: checkError } = await supabase
+        .from("shipments")
+        .select("tracking_number")
+        .eq("tracking_number", trackingNum)
+        .maybeSingle();
+
+      if (existing) {
+        showSystemMessage("error", "A shipment with this tracking number already exists.");
+        return;
+      }
+
+      // Create initial history entry
+      const initialMilestoneIndex = 0; // Shipment Received
+      const milestoneName = MILESTONES[initialMilestoneIndex].name;
+      const description = MILESTONES[initialMilestoneIndex].description;
+      const nowStr = new Date().toISOString();
+
+      const milestoneHistory = [
+        {
+          milestoneIndex: initialMilestoneIndex,
+          milestoneName,
+          description,
+          timestamp: nowStr
+        }
+      ];
+
+      const referenceNumber = newShipment.referenceNumber || `REF-${Math.floor(10000000 + Math.random() * 90000000)}`;
+
+      const initialNotifs = [
+        {
+          id: `notif-email-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          timestamp: nowStr,
+          type: "email",
+          recipient: "shipplixservices@gmail.com",
+          milestoneName,
+          status: "sent"
+        },
+        {
+          id: `notif-wa-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          timestamp: nowStr,
+          type: "whatsapp",
+          recipient: newShipment.phoneNumber || "+234 916 827 3513",
+          milestoneName,
+          status: "sent"
+        }
+      ];
+
+      const dbShipment = {
+        tracking_number: trackingNum,
+        reference_number: referenceNumber,
+        sender_name: newShipment.senderName,
+        receiver_name: newShipment.receiverName,
+        phone_number: newShipment.phoneNumber,
+        origin_country: newShipment.originCountry || "Nigeria",
+        destination_country: newShipment.destinationCountry,
+        weight: parseFloat(newShipment.weight) || 0.1,
+        number_of_packages: parseInt(newShipment.numberOfPackages) || 1,
+        service_type: newShipment.serviceType || "Express",
+        booking_date: newShipment.bookingDate || nowStr.split('T')[0],
+        expected_delivery_date: newShipment.expectedDeliveryDate || nowStr.split('T')[0],
+        shipment_notes: newShipment.shipmentNotes || "",
+        current_milestone_index: initialMilestoneIndex,
+        milestone_history: milestoneHistory,
+        notifications: initialNotifs,
+        is_paused: false,
+        port_gateway: newShipment.portGateway || ""
+      };
+
+      const { data: insertedData, error: insertError } = await supabase
+        .from("shipments")
+        .insert([dbShipment])
+        .select();
+
+      if (insertError) {
+        showSystemMessage("error", insertError.message || "Failed to register shipment.");
+        return;
+      }
+
+      if (insertedData && insertedData[0]) {
+        const mapped = mapDbShipmentToShipment(insertedData[0]);
+        if (mapped) {
+          // Insert normalized shipment_events table too!
+          await supabase.from("shipment_events").insert([{
+            shipment_id: insertedData[0].id,
+            tracking_number: trackingNum,
+            milestone_index: initialMilestoneIndex,
+            milestone_name: milestoneName,
+            description: description,
+            timestamp: nowStr
+          }]);
+
+          showSystemMessage("success", `Shipment ${mapped.trackingNumber} registered successfully!`);
+        }
+      }
+
+      // Reset form
+      setNewShipment({
+        trackingNumber: "",
+        referenceNumber: "",
+        senderName: "",
+        receiverName: "",
+        phoneNumber: "",
+        originCountry: "Nigeria",
+        destinationCountry: "United States",
+        weight: "10.0",
+        numberOfPackages: "1",
+        serviceType: "Express",
+        bookingDate: new Date().toISOString().split('T')[0],
+        expectedDeliveryDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
+        shipmentNotes: "",
+        portGateway: ""
+      });
+      fetchDashboardData();
+      setActiveTab("fleet");
+    } catch (err: any) {
+      console.error("Exception during shipment registration:", err);
+      showSystemMessage("error", `Network failure registering shipment: ${err?.message || err}`);
     } finally {
       setActionLoading(null);
     }
@@ -249,22 +602,38 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
     if (!editingShipment) return;
     setActionLoading("edit");
     try {
-      const response = await fetch(`/api/shipments/${editingShipment.trackingNumber}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingShipment)
-      });
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("shipments")
+        .update({
+          sender_name: editingShipment.senderName,
+          receiver_name: editingShipment.receiverName,
+          phone_number: editingShipment.phoneNumber,
+          origin_country: editingShipment.originCountry,
+          destination_country: editingShipment.destinationCountry,
+          weight: parseFloat(String(editingShipment.weight)) || 0.1,
+          number_of_packages: parseInt(String(editingShipment.numberOfPackages)) || 1,
+          service_type: editingShipment.serviceType,
+          booking_date: editingShipment.bookingDate,
+          expected_delivery_date: editingShipment.expectedDeliveryDate,
+          shipment_notes: editingShipment.shipmentNotes,
+          port_gateway: editingShipment.portGateway
+        })
+         .eq("tracking_number", editingShipment.trackingNumber.toUpperCase())
+         .select();
 
-      if (data.success) {
+      if (error) {
+        showSystemMessage("error", error.message || "Update failed.");
+        return;
+      }
+
+      if (data && data[0]) {
+        const mapped = mapDbShipmentToShipment(data[0]);
         showSystemMessage("success", `Shipment details updated successfully!`);
         setEditingShipment(null);
-        if (selectedShipment && selectedShipment.trackingNumber.toUpperCase() === data.shipment.trackingNumber.toUpperCase()) {
-          setSelectedShipment(data.shipment);
+        if (selectedShipment && selectedShipment.trackingNumber.toUpperCase() === mapped!.trackingNumber.toUpperCase()) {
+          setSelectedShipment(mapped);
         }
         fetchDashboardData();
-      } else {
-        showSystemMessage("error", data.message || "Update failed.");
       }
     } catch (err) {
       showSystemMessage("error", "Network error updating details.");
@@ -280,24 +649,83 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
     setActionLoading("milestone");
 
     try {
-      const response = await fetch(`/api/shipments/${selectedShipment.trackingNumber}/milestone`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          milestoneIndex: milestoneUpdate.milestoneIndex,
-          customDescription: milestoneUpdate.customDescription
-        })
-      });
-      const data = await response.json();
+      const parsedIndex = parseInt(String(milestoneUpdate.milestoneIndex));
+      if (parsedIndex < 0 || parsedIndex >= MILESTONES.length) {
+        showSystemMessage("error", "Invalid milestone index.");
+        return;
+      }
 
-      if (data.success) {
-        showSystemMessage("success", `Transit stage advanced for ${selectedShipment.trackingNumber}! Notifications simulated successfully.`);
-        
-        // Update local selection
-        setSelectedShipment(data.shipment);
-        fetchDashboardData();
+      const milestoneName = MILESTONES[parsedIndex].name;
+      const description = milestoneUpdate.customDescription || MILESTONES[parsedIndex].description;
+      const timestamp = new Date().toISOString();
+
+      const existingHistory = [...(selectedShipment.milestoneHistory || [])];
+      const historyIndex = existingHistory.findIndex(h => h.milestoneIndex === parsedIndex);
+      const newHistoryEntry = {
+        milestoneIndex: parsedIndex,
+        milestoneName,
+        description,
+        timestamp
+      };
+
+      if (historyIndex !== -1) {
+        existingHistory[historyIndex] = newHistoryEntry;
       } else {
-        showSystemMessage("error", data.message || "Failed to transition milestone.");
+        existingHistory.push(newHistoryEntry);
+      }
+      existingHistory.sort((a, b) => a.milestoneIndex - b.milestoneIndex);
+
+      const newNotifs = [
+        {
+          id: `notif-email-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          timestamp,
+          type: "email",
+          recipient: "shipplixservices@gmail.com",
+          milestoneName,
+          status: "sent"
+        },
+        {
+          id: `notif-wa-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          timestamp,
+          type: "whatsapp",
+          recipient: selectedShipment.phoneNumber || "+234 916 827 3513",
+          milestoneName,
+          status: "sent"
+        }
+      ];
+      const updatedNotifications = [...(selectedShipment.notifications || []), ...newNotifs];
+
+      const { data, error } = await supabase
+        .from("shipments")
+        .update({
+          current_milestone_index: parsedIndex,
+          milestone_history: existingHistory,
+          notifications: updatedNotifications
+        })
+        .eq("tracking_number", selectedShipment.trackingNumber.toUpperCase())
+        .select();
+
+      if (error) {
+        showSystemMessage("error", error.message || "Failed to transition milestone.");
+        return;
+      }
+
+      if (data && data[0]) {
+        const mapped = mapDbShipmentToShipment(data[0]);
+        
+        // Create event in shipment_events
+        await supabase.from("shipment_events").insert([{
+          shipment_id: data[0].id,
+          tracking_number: selectedShipment.trackingNumber.toUpperCase(),
+          milestone_index: parsedIndex,
+          milestone_name: milestoneName,
+          description: description,
+          timestamp: timestamp
+        }]);
+
+        showSystemMessage("success", `Transit stage advanced for ${selectedShipment.trackingNumber}! Notifications simulated successfully.`);
+        setSelectedShipment(mapped);
+        fetchDashboardData();
       }
     } catch (err) {
       showSystemMessage("error", "Network error during stage advancement.");
@@ -313,20 +741,21 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
     }
     setActionLoading(`delete-${trackingNumber}`);
     try {
-      const response = await fetch(`/api/shipments/${trackingNumber}`, {
-        method: "DELETE"
-      });
-      const data = await response.json();
+      const { error } = await supabase
+        .from("shipments")
+        .delete()
+        .eq("tracking_number", trackingNumber.toUpperCase());
 
-      if (data.success) {
-        showSystemMessage("success", `Shipment ${trackingNumber} has been deleted.`);
-        if (selectedShipment?.trackingNumber === trackingNumber) {
-          setSelectedShipment(null);
-        }
-        fetchDashboardData();
-      } else {
-        showSystemMessage("error", data.message || "Delete request failed.");
+      if (error) {
+        showSystemMessage("error", error.message || "Delete request failed.");
+        return;
       }
+
+      showSystemMessage("success", `Shipment ${trackingNumber} has been deleted.`);
+      if (selectedShipment?.trackingNumber === trackingNumber) {
+        setSelectedShipment(null);
+      }
+      fetchDashboardData();
     } catch (err) {
       showSystemMessage("error", "Network error deleting shipment.");
     } finally {
@@ -337,21 +766,27 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
   // Hold / Resume Handlers
   const handlePauseToggle = async (shipmentToToggle: Shipment) => {
     const isHold = !shipmentToToggle.isPaused;
-    const actionUrl = `/api/shipments/${shipmentToToggle.trackingNumber}/${isHold ? "pause" : "resume"}`;
     setActionLoading(`pause-${shipmentToToggle.trackingNumber}`);
 
     try {
-      const response = await fetch(actionUrl, { method: "POST" });
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("shipments")
+        .update({ is_paused: isHold })
+        .eq("tracking_number", shipmentToToggle.trackingNumber.toUpperCase())
+        .select();
 
-      if (data.success) {
+      if (error) {
+        showSystemMessage("error", "Failed to toggle pause status.");
+        return;
+      }
+
+      if (data && data[0]) {
+        const mapped = mapDbShipmentToShipment(data[0]);
         showSystemMessage("success", `Shipment status updated to ${isHold ? "ON HOLD" : "ACTIVE TRANSIT"}.`);
         if (selectedShipment?.trackingNumber === shipmentToToggle.trackingNumber) {
-          setSelectedShipment(data.shipment);
+          setSelectedShipment(mapped);
         }
         fetchDashboardData();
-      } else {
-        showSystemMessage("error", "Failed to toggle pause status.");
       }
     } catch (err) {
       showSystemMessage("error", "Connection failed toggling pause.");
