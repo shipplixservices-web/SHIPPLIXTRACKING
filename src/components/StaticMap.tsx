@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Globe, Plane, MapPin, Compass, Navigation, Activity, Cloud, ShieldAlert } from "lucide-react";
+import { Plane, MapPin, Compass, Navigation } from "lucide-react";
 import { Shipment, MILESTONES } from "../types.js";
 
 interface StaticMapProps {
@@ -158,7 +158,6 @@ export default function StaticMap({ shipment }: StaticMapProps) {
 
   // Derived stats for map overlays
   const currentDistanceCovered = Math.round(destination.distanceKm * progress);
-  const remainingDistance = Math.round(destination.distanceKm * (1 - progress));
   
   // Calculate simulated latitude and longitude for the current position
   const currentCoords = useMemo(() => {
@@ -388,8 +387,8 @@ export default function StaticMap({ shipment }: StaticMapProps) {
       </div>
 
       {/* Flight Route Progress Stats Footer Panel */}
-      <div className="bg-slate-900/90 border-t border-slate-800 p-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono backdrop-blur-md">
-        <div className="flex items-start space-x-3.5">
+      <div className="bg-slate-900/90 border-t border-slate-800 p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono backdrop-blur-md">
+        <div className="flex items-start space-x-3.5 pr-4">
           <div className="p-1.5 bg-blue-500/10 rounded border border-blue-500/20 text-blue-400 shrink-0">
             <MapPin className="h-4 w-4" />
           </div>
@@ -400,7 +399,7 @@ export default function StaticMap({ shipment }: StaticMapProps) {
           </div>
         </div>
 
-        <div className="flex items-start space-x-3.5 border-t md:border-t-0 md:border-x border-slate-800 pt-3 md:pt-0 md:px-4">
+        <div className="flex items-start space-x-3.5 border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-4">
           <div className="p-1.5 bg-yellow-500/10 rounded border border-yellow-500/20 text-[#FFD700] shrink-0">
             <Plane className="h-4 w-4" />
           </div>
@@ -409,20 +408,6 @@ export default function StaticMap({ shipment }: StaticMapProps) {
             <span className="text-[#FFD700] font-black text-xs">{destination.city} ({destination.code})</span>
             <span className="text-slate-300 text-[10px] block font-semibold">{destination.airport}</span>
             <span className="text-slate-400 text-[10px] block mt-0.5 font-mono">{destination.lat} • {destination.lng}</span>
-          </div>
-        </div>
-
-        <div className="flex items-start space-x-3.5 border-t md:border-t-0 pt-3 md:pt-0">
-          <div className="p-1.5 bg-emerald-500/10 rounded border border-emerald-500/20 text-emerald-400 shrink-0">
-            <Activity className="h-4 w-4" />
-          </div>
-          <div>
-            <span className="text-slate-500 text-[8px] block uppercase">Tracking Telemetry</span>
-            <div className="space-y-0.5 text-slate-300">
-              <div>RANGE TO CITY: <span className="text-white font-bold">{remainingDistance.toLocaleString()} KM left</span></div>
-              <div>CRUISE SPEED: <span className="text-blue-400 font-bold">520 KTS (Mach 0.82)</span></div>
-              <div>WEATHER DEVIATION: <span className="text-emerald-400 font-bold">CLEAR PATH / NORMAL</span></div>
-            </div>
           </div>
         </div>
       </div>
