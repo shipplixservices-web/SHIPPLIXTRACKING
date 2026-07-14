@@ -1,8 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = "https://bmloeehiafypotiduton.supabase.co/rest/v1/";
+// Load from environment variables (checking both Vite and standard Node process.env contexts) with the hardcoded values as fallbacks
+const SUPABASE_URL = 
+  (typeof process !== "undefined" && process.env?.SUPABASE_URL) ||
+  (typeof process !== "undefined" && process.env?.VITE_SUPABASE_URL) ||
+  (import.meta.env?.VITE_SUPABASE_URL) ||
+  "https://bmloeehiafypotiduton.supabase.co/rest/v1/";
 
-const SUPABASE_PUBLIC_KEY = "sb_publishable_rW-id_IsQU1PdjMyEJ7cog_LNhvlW44";
+const SUPABASE_PUBLIC_KEY = 
+  (typeof process !== "undefined" && process.env?.SUPABASE_ANON_KEY) ||
+  (typeof process !== "undefined" && process.env?.VITE_SUPABASE_ANON_KEY) ||
+  (import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
+  "sb_publishable_rW-id_IsQU1PdjMyEJ7cog_LNhvlW44";
 
 // Sanitize the URL to get the base Supabase domain (removing /rest/v1/)
 // This ensures auth requests go to /auth/v1/ instead of /rest/v1/auth/v1/

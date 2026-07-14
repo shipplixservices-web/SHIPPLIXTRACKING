@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Search, MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, FileText, CheckCircle2 } from "lucide-react";
 import { Shipment, MILESTONES } from "../types.js";
+import { supabase, mapDbShipmentToShipment } from "../supabaseClient.js";
 import StaticMap from "./StaticMap.tsx";
 import Timeline from "./Timeline.tsx";
 import ShipplixLogo from "./ShipplixLogo.tsx";
@@ -33,18 +34,36 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
     setSearchedNumber(trimmed);
 
     try {
-      const response = await fetch(`/api/shipments/${trimmed}`);
-      const data = await response.json();
+      // Query Supabase directly for real-time tracking accuracy
+      const { data, error: dbError } = await supabase
+        .from("shipments")
+        .select("*")
+        .eq("tracking_number", trimmed)
+        .maybeSingle();
 
-      if (data.success && data.shipment) {
-        setShipment(data.shipment);
+      if (dbError) {
+        console.error("Database connection error while tracking:", dbError);
+        setError(`Database connection error: ${dbError.message || "Permission denied / network failure."}`);
+        setShipment(null);
+        return;
+      }
+
+      if (!data) {
+        setError(`Shipment with tracking number "${trimmed}" could not be located. Check spelling and retry.`);
+        setShipment(null);
+        return;
+      }
+
+      const mapped = mapDbShipmentToShipment(data);
+      if (mapped) {
+        setShipment(mapped);
       } else {
-        setError(data.message || "Tracking number not recognized. Check spelling and retry.");
+        setError("Error processing shipment data from the database.");
         setShipment(null);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error tracking shipment:", err);
-      setError("Unable to connect to the tracking gateway. Please try again.");
+      setError(`Unable to connect to the tracking gateway: ${err?.message || "Check your internet connection and try again."}`);
       setShipment(null);
     } finally {
       setLoading(false);

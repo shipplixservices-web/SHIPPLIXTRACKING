@@ -1,6 +1,8 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import dotenv from "dotenv";
+dotenv.config();
 import { createServer as createViteServer } from "vite";
 import { Shipment, MILESTONES, MilestoneHistoryEntry, NotificationEntry } from "./src/types.js";
 import { supabase, mapDbShipmentToShipment } from "./src/supabaseClient.js";
