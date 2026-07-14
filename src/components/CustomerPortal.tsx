@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Search, MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, FileText, CheckCircle2 } from "lucide-react";
 import { Shipment, MILESTONES } from "../types.js";
-import WorldMap from "./WorldMap.tsx";
+import StaticMap from "./StaticMap.tsx";
 import Timeline from "./Timeline.tsx";
 import ShipplixLogo from "./ShipplixLogo.tsx";
 
@@ -251,16 +251,10 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
 
           {/* Map & Detail Card Side-by-Side */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* World Map Component */}
-            <div className="lg:col-span-2 space-y-4">
-            <WorldMap 
-              origin={shipment.originCountry} 
-              destination={shipment.destinationCountry} 
-              currentMilestoneIndex={shipment.currentMilestoneIndex}
-              isPaused={shipment.isPaused}
-              portGateway={shipment.portGateway}
-            />
-          </div>
+            {/* Static Route Radar Map Component */}
+            <div className="lg:col-span-2 space-y-4" id="static-route-map-container">
+              <StaticMap shipment={shipment} />
+            </div>
 
           {/* Shipment Details Card */}
           <div className="bg-[#032B73] text-white rounded-xl p-6 shadow-md border-b-4 border-[#FFD700] space-y-6">

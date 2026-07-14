@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Shipment, MILESTONES, DashboardStats } from "../types.js";
 import ShipplixLogo from "./ShipplixLogo.tsx";
+import { supabase } from "../supabaseClient.js";
 
 interface AdminPanelProps {
   onTrackingRequest: (trackingNumber: string) => void;
@@ -84,17 +85,29 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
   };
 
   useEffect(() => {
-    // Check local storage for pre-existing session
-    const savedSession = localStorage.getItem("shipplix_admin_session");
-    if (savedSession) {
-      try {
-        const session = JSON.parse(savedSession);
+    // Check local storage and Supabase session for pre-existing session
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user) {
         setIsAuthenticated(true);
-        setAdminUser(session.user);
-      } catch {
-        localStorage.removeItem("shipplix_admin_session");
+        setAdminUser({
+          email: session.user.email || "",
+          name: "Shipplix Operations Admin"
+        });
+      } else {
+        const savedSession = localStorage.getItem("shipplix_admin_session");
+        if (savedSession) {
+          try {
+            const parsed = JSON.parse(savedSession);
+            setIsAuthenticated(true);
+            setAdminUser(parsed.user);
+          } catch {
+            localStorage.removeItem("shipplix_admin_session");
+          }
+        }
       }
-    }
+    };
+    checkSession();
   }, []);
 
   useEffect(() => {
@@ -141,38 +154,50 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
     }, 5000);
   };
 
-  // Auth handler
+  // Auth handler using Supabase Auth
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
     setAuthLoading(true);
 
     try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
-      const data = await response.json();
 
-      if (data.success) {
+      if (error) {
+        setAuthError(error.message);
+      } else if (data && data.user) {
         setIsAuthenticated(true);
-        setAdminUser(data.user);
-        localStorage.setItem("shipplix_admin_session", JSON.stringify(data));
+        const adminData = {
+          email: data.user.email || "",
+          name: "Shipplix Operations Admin"
+        };
+        setAdminUser(adminData);
+        localStorage.setItem("shipplix_admin_session", JSON.stringify({
+          success: true,
+          user: adminData
+        }));
       } else {
-        setAuthError(data.message || "Invalid credentials.");
+        setAuthError("Failed to authenticate. Invalid administrator credentials.");
       }
     } catch (err) {
-      setAuthError("Failed to authenticate. Is the server running?");
+      setAuthError("Failed to authenticate. Connection error.");
     } finally {
       setAuthLoading(false);
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsAuthenticated(false);
     setAdminUser(null);
     localStorage.removeItem("shipplix_admin_session");
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Error signing out from Supabase", err);
+    }
   };
 
   // Create Shipment handler
