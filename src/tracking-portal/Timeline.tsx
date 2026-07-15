@@ -1,6 +1,7 @@
 import React from "react";
 import { Check, Clock, AlertTriangle, Play, HelpCircle } from "lucide-react";
-import { MILESTONES, MilestoneHistoryEntry } from "../types.js";
+import { MILESTONES, MilestoneHistoryEntry } from "../shared/types.js";
+import { formatTimestamp } from "../shared/utils.ts";
 
 interface TimelineProps {
   currentMilestoneIndex: number;
@@ -9,31 +10,6 @@ interface TimelineProps {
 }
 
 export default function Timeline({ currentMilestoneIndex, milestoneHistory, isPaused = false }: TimelineProps) {
-  // Format dates nicely
-  const formatTimestamp = (isoString?: string) => {
-    if (!isoString) return "";
-    const date = new Date(isoString);
-    
-    // Format options: 26 June 2026 at 10:42 AM
-    const day = date.getDate();
-    const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
-    ];
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    
-    let hours = date.getHours();
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    
-    return {
-      dateStr: `${day} ${month} ${year}`,
-      timeStr: `${hours}:${minutes} ${ampm}`
-    };
-  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">

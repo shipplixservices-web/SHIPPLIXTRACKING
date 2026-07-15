@@ -1,16 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
+import { Shipment } from "./types.js";
 
 // Load from environment variables (checking both Vite and standard Node process.env contexts) with the hardcoded values as fallbacks
 const SUPABASE_URL = 
   (typeof process !== "undefined" && process.env?.SUPABASE_URL) ||
   (typeof process !== "undefined" && process.env?.VITE_SUPABASE_URL) ||
-  (import.meta.env?.VITE_SUPABASE_URL) ||
+  ((import.meta as any).env?.VITE_SUPABASE_URL) ||
   "https://bmloeehiafypotiduton.supabase.co/rest/v1/";
 
 const SUPABASE_PUBLIC_KEY = 
   (typeof process !== "undefined" && process.env?.SUPABASE_ANON_KEY) ||
   (typeof process !== "undefined" && process.env?.VITE_SUPABASE_ANON_KEY) ||
-  (import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
+  ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY) ||
   "sb_publishable_rW-id_IsQU1PdjMyEJ7cog_LNhvlW44";
 
 // Sanitize the URL to get the base Supabase domain (removing /rest/v1/)
@@ -22,7 +23,7 @@ export const supabase = createClient(BASE_SUPABASE_URL, SUPABASE_PUBLIC_KEY);
 /**
  * Maps a Supabase DB shipment row (snake_case) to the React application's Shipment interface (camelCase).
  */
-export const mapDbShipmentToShipment = (dbShipment) => {
+export const mapDbShipmentToShipment = (dbShipment: any): Shipment | null => {
   if (!dbShipment) return null;
   return {
     trackingNumber: dbShipment.tracking_number,
@@ -45,4 +46,3 @@ export const mapDbShipmentToShipment = (dbShipment) => {
     portGateway: dbShipment.port_gateway || ""
   };
 };
-
