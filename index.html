@@ -3,7 +3,151 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <title>Shipplix Shipment Tracking Portal</title>
+    <script>
+      (function() {
+        function removeBranding() {
+          function scanAndHide(doc) {
+            if (!doc) return;
+            
+            // 1. Selector based hiding of known branding card containers
+            const selectors = [
+              '.branding-card',
+              '.aistudio-branding',
+              '.aistudio-header',
+              '.aistudio-card',
+              '[class*="branding"]',
+              '[class*="aistudio"]',
+              '[id*="branding"]',
+              '[id*="aistudio"]'
+            ];
+            selectors.forEach(sel => {
+              try {
+                const els = doc.querySelectorAll(sel);
+                els.forEach(el => {
+                  if (el.textContent && (
+                    el.textContent.includes("Google AI Studio") || 
+                    el.textContent.includes("shipplix.com") ||
+                    el.textContent.includes("Shipplix Shipment")
+                  )) {
+                    el.style.setProperty('display', 'none', 'important');
+                    el.style.setProperty('height', '0', 'important');
+                    el.style.setProperty('margin', '0', 'important');
+                    el.style.setProperty('padding', '0', 'important');
+                    el.style.setProperty('visibility', 'hidden', 'important');
+                  }
+                });
+              } catch (e) {}
+            });
+
+            // 2. Text-based search for branding content strings to find and hide parent card container
+            try {
+              const walker = doc.createTreeWalker(
+                doc.body || doc.documentElement,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+              );
+
+              const nodesToProcess = [];
+              let currentNode = walker.nextNode();
+              while (currentNode) {
+                const text = currentNode.nodeValue;
+                if (text && (
+                  text.includes("My Google AI Studio") || 
+                  text.includes("track.shipplix.com") ||
+                  text.includes("Shipplix Shipment Tracking Portal")
+                )) {
+                  nodesToProcess.push(currentNode);
+                }
+                currentNode = walker.nextNode();
+              }
+
+              nodesToProcess.forEach(node => {
+                let parent = node.parentElement;
+                let count = 0;
+                while (parent && parent.tagName !== "BODY" && parent.tagName !== "HTML" && count < 6) {
+                  const style = window.getComputedStyle(parent);
+                  const bgColor = style.backgroundColor;
+                  const isGreen = bgColor.includes("rgb(") && (
+                    bgColor.includes("rgb(15, 81, 50)") || 
+                    bgColor.includes("rgb(16, 185, 129)") || 
+                    bgColor.includes("rgb(4, 120, 87)") || 
+                    bgColor.includes("rgb(6, 95, 70)") || 
+                    bgColor.includes("rgb(6, 78, 59)") || 
+                    bgColor.includes("rgb(21, 128, 61)") || 
+                    bgColor.includes("rgb(22, 163, 74)") || 
+                    bgColor.includes("rgb(21, 115, 71)") || 
+                    bgColor.includes("rgb(10, 102, 51)") || 
+                    bgColor.includes("rgb(11, 84, 43)") ||
+                    bgColor.includes("rgb(2, 48, 32)") ||
+                    bgColor.includes("rgb(5, 46, 22)")
+                  );
+
+                  const hasCardClass = parent.className && typeof parent.className === "string" && (
+                    parent.className.includes("card") || 
+                    parent.className.includes("container") || 
+                    parent.className.includes("header") || 
+                    parent.className.includes("banner") || 
+                    parent.className.includes("branding")
+                  );
+
+                  // If it's a green card or looks like a card container, hide it
+                  if (isGreen || hasCardClass || parent.tagName === "DIV") {
+                    parent.style.setProperty('display', 'none', 'important');
+                    parent.style.setProperty('height', '0', 'important');
+                    parent.style.setProperty('margin', '0', 'important');
+                    parent.style.setProperty('padding', '0', 'important');
+                    parent.style.setProperty('pointer-events', 'none', 'important');
+                    parent.style.setProperty('visibility', 'hidden', 'important');
+                    break;
+                  }
+                  parent = parent.parentElement;
+                  count++;
+                }
+              });
+            } catch (e) {}
+          }
+
+          try {
+            scanAndHide(document);
+          } catch (e) {}
+
+          try {
+            if (window.parent && window.parent.document) {
+              scanAndHide(window.parent.document);
+            }
+          } catch (e) {}
+        }
+
+        // Run immediately
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", removeBranding);
+        } else {
+          removeBranding();
+        }
+
+        // Run periodically
+        setInterval(removeBranding, 500);
+
+        // Run with MutationObserver
+        try {
+          const observer = new MutationObserver(removeBranding);
+          observer.observe(document.documentElement, {
+            childList: true,
+            subtree: true
+          });
+          
+          if (window.parent && window.parent.document) {
+            const parentObserver = new MutationObserver(removeBranding);
+            parentObserver.observe(window.parent.document.documentElement, {
+              childList: true,
+              subtree: true
+            });
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
