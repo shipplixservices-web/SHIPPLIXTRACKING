@@ -17,12 +17,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 flex flex-col selection:bg-[#FFD700] selection:text-[#032B73]">
       
-      {/* Universal Shipplix Branded Header / Info bar */}
-      <div className="bg-[#FFD700] text-[#032B73] py-2 px-4 sm:px-6 lg:px-8 text-center text-xs font-black tracking-widest uppercase flex items-center justify-center space-x-2 border-b border-[#032B73]/25 z-40 select-none">
-        <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />
-        <span>🔴 NEIGHBORHOOD CONSIGNMENT CARGO BATCH CLOSING SOON! NEXT FLIGHT DEPARTS FRIDAY 15:00 UTC</span>
-      </div>
-
       {/* Main branded Navigation Bar */}
       <Navbar currentView={currentView} onViewChange={setCurrentView} />
 
