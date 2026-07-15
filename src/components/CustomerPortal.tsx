@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Search, MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, FileText, CheckCircle2 } from "lucide-react";
-import { Shipment, MILESTONES } from "@shared/types";
-import { useTrackShipment } from "@shared/hooks";
-import { formatSimpleDate } from "@shared/utils";
+import { Shipment, MILESTONES } from "../types.js";
+import { supabase, mapDbShipmentToShipment } from "../supabaseClient.js";
 import StaticMap from "./StaticMap.tsx";
 import Timeline from "./Timeline.tsx";
-import ShipplixLogo from "@shared/ShipplixLogo";
+import ShipplixLogo from "./ShipplixLogo.tsx";
 
 interface CustomerPortalProps {
   initialTrackingQuery?: string;
@@ -13,7 +12,10 @@ interface CustomerPortalProps {
 
 export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPortalProps) {
   const [trackingNumber, setTrackingNumber] = useState(initialTrackingQuery);
-  const { shipment, loading, error, searchedNumber, track } = useTrackShipment(initialTrackingQuery);
+  const [searchedNumber, setSearchedNumber] = useState("");
+  const [shipment, setShipment] = useState<Shipment | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Quick test tracking numbers
   const testNumbers = [
@@ -23,10 +25,55 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
     { num: "SPX-20260620-1080", desc: "Delivered - United Kingdom" }
   ];
 
-  // Sync tracking input if initial query changes
+  const handleTrack = async (numToTrack: string) => {
+    const trimmed = numToTrack.trim().toUpperCase();
+    if (!trimmed) return;
+
+    setLoading(true);
+    setError(null);
+    setSearchedNumber(trimmed);
+
+    try {
+      // Query Supabase directly for real-time tracking accuracy
+      const { data, error: dbError } = await supabase
+        .from("shipments")
+        .select("*")
+        .eq("tracking_number", trimmed)
+        .maybeSingle();
+
+      if (dbError) {
+        console.error("Database connection error while tracking:", dbError);
+        setError(`Database connection error: ${dbError.message || "Permission denied / network failure."}`);
+        setShipment(null);
+        return;
+      }
+
+      if (!data) {
+        setError(`Shipment with tracking number "${trimmed}" could not be located. Check spelling and retry.`);
+        setShipment(null);
+        return;
+      }
+
+      const mapped = mapDbShipmentToShipment(data);
+      if (mapped) {
+        setShipment(mapped);
+      } else {
+        setError("Error processing shipment data from the database.");
+        setShipment(null);
+      }
+    } catch (err: any) {
+      console.error("Error tracking shipment:", err);
+      setError(`Unable to connect to the tracking gateway: ${err?.message || "Check your internet connection and try again."}`);
+      setShipment(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (initialTrackingQuery) {
       setTrackingNumber(initialTrackingQuery);
+      handleTrack(initialTrackingQuery);
     }
   }, [initialTrackingQuery]);
 
@@ -34,6 +81,21 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
   const progressPercent = shipment 
     ? Math.min(Math.round((Math.min(shipment.currentMilestoneIndex, 23) / 23) * 100), 100) 
     : 0;
+
+  // Format booking/delivery dates beautifully
+  const formatSimpleDate = (dateStr?: string) => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -54,7 +116,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
           <form 
             onSubmit={(e) => {
               e.preventDefault();
-              track(trackingNumber);
+              handleTrack(trackingNumber);
             }}
             className="flex flex-col sm:flex-row gap-2 max-w-2xl mx-auto"
           >
@@ -100,7 +162,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
                   type="button"
                   onClick={() => {
                     setTrackingNumber(t.num);
-                    track(t.num);
+                    handleTrack(t.num);
                   }}
                   className="bg-white/10 hover:bg-white/20 hover:text-white text-blue-100 text-xs px-3.5 py-2 rounded-lg border border-white/10 font-mono transition-all flex items-center space-x-1.5"
                 >
