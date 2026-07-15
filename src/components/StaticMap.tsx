@@ -189,7 +189,7 @@ export default function StaticMap({ shipment }: StaticMapProps) {
           </div>
           <div>
             <h4 className="text-sm font-black tracking-wide uppercase text-[#FFD700]">
-              Static Route Radar
+              
             </h4>
             <p className="text-[10px] text-slate-400 font-mono">
               HUB DISPATCH VECTOR • LAGOS HUB ➔ {destination.city.toUpperCase()}
