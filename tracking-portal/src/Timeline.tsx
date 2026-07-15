@@ -1,7 +1,7 @@
 import React from "react";
 import { Check, Clock, AlertTriangle, Play, HelpCircle } from "lucide-react";
-import { MILESTONES, MilestoneHistoryEntry } from "../../shared/types.ts";
-import { formatTimestamp } from "../../shared/utils.ts";
+import { MILESTONES, MilestoneHistoryEntry } from "../../shared/types";
+import { formatTimestamp } from "../../shared/utils";
 
 interface TimelineProps {
   currentMilestoneIndex: number;
