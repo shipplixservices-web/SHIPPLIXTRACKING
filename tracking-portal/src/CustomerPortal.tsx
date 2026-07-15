@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Search, MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, FileText, CheckCircle2 } from "lucide-react";
-import { Shipment, MILESTONES } from "../shared/types.js";
-import { useTrackShipment } from "../shared/hooks.ts";
-import { formatSimpleDate } from "../shared/utils.ts";
+import { Shipment, MILESTONES } from "../../shared/types.ts";
+import { useTrackShipment } from "../../shared/hooks.ts";
+import { formatSimpleDate } from "../../shared/utils.ts";
 import StaticMap from "./StaticMap.tsx";
 import Timeline from "./Timeline.tsx";
-import ShipplixLogo from "../shared/ShipplixLogo.tsx";
+import ShipplixLogo from "../../shared/ShipplixLogo.tsx";
 
 interface CustomerPortalProps {
   initialTrackingQuery?: string;

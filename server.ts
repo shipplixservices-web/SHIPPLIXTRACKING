@@ -4,8 +4,8 @@ import fs from "fs";
 import dotenv from "dotenv";
 dotenv.config();
 import { createServer as createViteServer } from "vite";
-import { Shipment, MILESTONES, MilestoneHistoryEntry, NotificationEntry } from "./src/shared/types.js";
-import { supabase, mapDbShipmentToShipment } from "./src/shared/supabaseClient.js";
+import { Shipment, MILESTONES, MilestoneHistoryEntry, NotificationEntry } from "./shared/types.ts";
+import { supabase, mapDbShipmentToShipment } from "./shared/supabaseClient.ts";
 
 const app = express();
 const PORT = 3000;

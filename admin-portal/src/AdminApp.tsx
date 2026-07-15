@@ -3,8 +3,8 @@ import {
   Shield, Key, LayoutDashboard, Plus, Eye, Edit2, Trash2, Pause, Play, Download, Search, 
   MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, CheckCircle2, Sliders, Database, Save, LogOut, FileText, ChevronRight, User, Users
 } from "lucide-react";
-import { Shipment, MILESTONES, DashboardStats } from "../shared/types.ts";
-import { ShipplixApiClient } from "../shared/api.ts";
+import { Shipment, MILESTONES, DashboardStats } from "../../shared/types.ts";
+import { ShipplixApiClient } from "../../shared/api.ts";
 import { 
   formatSimpleDate, 
   generateTrackingNumberString, 
@@ -12,7 +12,7 @@ import {
   validateTrackingNumber,
   validateWeight,
   validatePackages
-} from "../shared/utils.ts";
+} from "../../shared/utils.ts";
 
 export default function AdminApp() {
   // Authentication State

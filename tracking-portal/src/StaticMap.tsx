@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Plane, MapPin, Compass, Navigation } from "lucide-react";
-import { Shipment, MILESTONES } from "../shared/types.js";
+import { Shipment, MILESTONES } from "../../shared/types.ts";
 
 interface StaticMapProps {
   shipment: Shipment;

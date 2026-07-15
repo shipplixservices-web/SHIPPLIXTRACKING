@@ -1,8 +1,8 @@
 import React from "react";
-import Navbar from "../shared/Navbar.tsx";
+import Navbar from "../../shared/Navbar.tsx";
 import CustomerPortal from "./CustomerPortal.tsx";
 import { Mail, MessageSquare } from "lucide-react";
-import ShipplixLogo from "../shared/ShipplixLogo.tsx";
+import ShipplixLogo from "../../shared/ShipplixLogo.tsx";
 
 export default function CustomerApp() {
   return (
