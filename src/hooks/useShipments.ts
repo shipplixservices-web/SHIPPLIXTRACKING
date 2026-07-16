@@ -67,30 +67,63 @@ export function useShipments(isAuthenticated: boolean) {
     };
   }, [shipments]);
 
-  // Filtered shipments
-  const filteredShipments = useMemo(() => {
-    return shipments.filter(s => {
-      const query = searchQuery.trim().toLowerCase();
-      const matchesSearch = 
-        s.trackingNumber.toLowerCase().includes(query) ||
-        s.referenceNumber.toLowerCase().includes(query) ||
-        s.senderName.toLowerCase().includes(query) ||
-        s.receiverName.toLowerCase().includes(query);
-        
-      const matchesDest = filterDestination ? s.destinationCountry.toLowerCase() === filterDestination.toLowerCase() : true;
-      const matchesService = filterService ? s.serviceType.toLowerCase() === filterService.toLowerCase() : true;
-      
-      let matchesStatus = true;
-      if (filterStatus) {
-        if (filterStatus === "paused") matchesStatus = s.isPaused;
-        else if (filterStatus === "delivered") matchesStatus = s.currentMilestoneIndex === 23;
-        else if (filterStatus === "transit") matchesStatus = s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 23 && !s.isPaused;
-        else if (filterStatus === "pending") matchesStatus = s.currentMilestoneIndex === 0;
-      }
+  // Optimized pre-computed search index for instant lookup
+  const indexedShipments = useMemo(() => {
+    return shipments.map(s => {
+      const emailRecipients = s.notifications
+        ? s.notifications.filter(n => n.type === "email").map(n => n.recipient).join(" ")
+        : "";
 
-      return matchesSearch && matchesDest && matchesService && matchesStatus;
+      // Combine all requested searchable fields into a single optimized lowercase token string
+      const searchString = [
+        s.trackingNumber || "",
+        s.referenceNumber || "",
+        s.senderName || "", // Customer Name
+        s.receiverName || "", // Receiver Name
+        s.phoneNumber || "", // Phone
+        s.destinationCountry || "", // Destination / Country
+        s.originCountry || "", // Country
+        s.portGateway || "", // Destination Gateway / Port
+        (s as any).email || "",
+        (s as any).senderEmail || "",
+        (s as any).receiverEmail || "",
+        emailRecipients
+      ]
+        .map(v => v.trim().toLowerCase())
+        .filter(Boolean)
+        .join(" | ");
+
+      return {
+        shipment: s,
+        searchString
+      };
     });
-  }, [shipments, searchQuery, filterDestination, filterService, filterStatus]);
+  }, [shipments]);
+
+  // Filtered shipments utilizing the optimized pre-computed search index
+  const filteredShipments = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    
+    return indexedShipments
+      .filter(item => {
+        const matchesSearch = query ? item.searchString.includes(query) : true;
+        const s = item.shipment;
+        
+        const matchesDest = filterDestination ? s.destinationCountry.toLowerCase() === filterDestination.toLowerCase() : true;
+        const matchesService = filterService ? s.serviceType.toLowerCase() === filterService.toLowerCase() : true;
+        
+        let matchesStatus = true;
+        if (filterStatus) {
+          if (filterStatus === "paused") matchesStatus = s.isPaused;
+          else if (filterStatus === "delivered") matchesStatus = s.currentMilestoneIndex === 23;
+          else if (filterStatus === "transit") matchesStatus = s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 23 && !s.isPaused;
+          else if (filterStatus === "pending") matchesStatus = s.currentMilestoneIndex === 0;
+        }
+
+        return matchesSearch && matchesDest && matchesService && matchesStatus;
+      })
+      .map(item => item.shipment);
+  }, [indexedShipments, searchQuery, filterDestination, filterService, filterStatus]);
 
   // Unique destinations for filters
   const uniqueDestinations = useMemo(() => {
@@ -288,6 +321,7 @@ export function useShipments(isAuthenticated: boolean) {
     filterStatus,
     setFilterStatus,
     filteredShipments,
+    indexedShipments,
     uniqueDestinations,
     fetchDashboardData,
     registerShipment,

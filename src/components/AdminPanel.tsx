@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Shield, Key, LayoutDashboard, Plus, Eye, Edit2, Trash2, Pause, Play, Download, Search, 
   MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, CheckCircle2, Sliders, Database, Save, LogOut, Receipt,
@@ -54,6 +54,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
     filterStatus,
     setFilterStatus,
     filteredShipments,
+    indexedShipments,
     uniqueDestinations,
     registerShipment,
     updateShipmentDetails,
@@ -72,6 +73,19 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<"dashboard" | "finance" | "reports" | "fleet" | "add" | "update" | "backups" | "settings">("dashboard");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [editingShipment, setEditingShipment] = useState<Shipment | null>(null);
+
+  // Global Command Search States
+  const [globalSearchQuery, setGlobalSearchQuery] = useState("");
+  const globalSearchResults = useMemo(() => {
+    const q = globalSearchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return indexedShipments
+      .filter(item => item.searchString.includes(q))
+      .map(item => ({
+        shipment: item.shipment,
+        matchedFields: item.searchString
+      }));
+  }, [indexedShipments, globalSearchQuery]);
 
   // Load settings
   const settings = getAppSettings();
@@ -399,6 +413,142 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
           <LogOut className="h-4 w-4" />
           <span>Sign Out Session</span>
         </button>
+      </div>
+
+      {/* GLOBAL COMMAND SEARCH BAR */}
+      <div className="bg-[#032B73] rounded-xl border border-blue-800 p-5 shadow-sm space-y-3 relative text-white">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <span className="text-[10px] font-bold text-[#FFD700] bg-white/10 px-2.5 py-0.5 rounded border border-white/15 uppercase tracking-widest font-mono">
+              ⚡ INSTANT GLOBAL FLEET SEARCH
+            </span>
+            <h3 className="text-sm font-bold text-white mt-1">
+              Global Search Engine
+            </h3>
+            <p className="text-xs text-blue-100/80">
+              Locate any shipment by Tracking Number, Reference Number, Customer Name, Phone, Email, Destination, Country, or Receiver Name instantly.
+            </p>
+          </div>
+          
+          <div className="text-right text-xs text-blue-200 font-mono hidden sm:block">
+            ACTIVE FLEET ENTRIES: <span className="text-[#FFD700] font-bold">{indexedShipments.length}</span>
+          </div>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-blue-300" />
+          <input
+            id="global-command-search"
+            type="text"
+            placeholder="Search shipments..."
+            value={globalSearchQuery}
+            onChange={(e) => setGlobalSearchQuery(e.target.value)}
+            className="w-full bg-white/10 hover:bg-white/15 focus:bg-white text-white focus:text-slate-900 pl-10 pr-16 py-3.5 rounded-lg border border-white/10 focus:border-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD700] transition-all placeholder-blue-200/60 focus:placeholder-slate-400 font-medium"
+          />
+          {globalSearchQuery && (
+            <button
+              onClick={() => setGlobalSearchQuery("")}
+              className="absolute right-3.5 top-2.5 text-blue-300 hover:text-white focus:outline-none text-xs bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded-md font-bold transition-all"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Floating results panel */}
+        {globalSearchQuery.trim() !== "" && (
+          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 bg-white rounded-xl border border-gray-200 shadow-2xl max-h-[380px] overflow-y-auto divide-y divide-gray-100 text-slate-900 animate-[fadeIn_0.15s_ease-out]">
+            <div className="bg-slate-50 px-4 py-2.5 flex justify-between items-center text-[10px] text-gray-500 font-mono font-bold border-b border-gray-100 tracking-wider">
+              <span>MATCHING SHIPMENTS ({globalSearchResults.length} FOUND)</span>
+              <span>ESC / CLEAR TO DISMISS</span>
+            </div>
+            
+            {globalSearchResults.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 space-y-1">
+                <p className="text-sm font-bold text-[#032B73]">No matching shipments found</p>
+                <p className="text-xs text-gray-400">Try searching with other details like phone, destination, or reference number</p>
+              </div>
+            ) : (
+              globalSearchResults.map(({ shipment }) => {
+                const isDelivered = shipment.currentMilestoneIndex === 23;
+                const isPaused = shipment.isPaused;
+                
+                return (
+                  <div 
+                    key={shipment.trackingNumber} 
+                    className="p-3.5 sm:p-4 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                  >
+                    <div className="space-y-1.5 flex-grow min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-black text-[#032B73] bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded">
+                          {shipment.trackingNumber}
+                        </span>
+                        <span className="font-mono text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                          REF: {shipment.referenceNumber}
+                        </span>
+                        
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                          isPaused
+                            ? "bg-amber-100 text-amber-800 border border-amber-200"
+                            : isDelivered
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                              : "bg-blue-100 text-blue-800 border border-blue-200"
+                        }`}>
+                          {isPaused ? "ON HOLD" : isDelivered ? "DELIVERED" : `STAGE ${shipment.currentMilestoneIndex + 1}`}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                        <p className="text-gray-700 truncate">
+                          <strong className="text-gray-900 font-bold">Customer:</strong> {shipment.senderName}
+                        </p>
+                        <p className="text-gray-700 truncate">
+                          <strong className="text-gray-900 font-bold">Receiver:</strong> {shipment.receiverName}
+                        </p>
+                        <p className="text-gray-500 font-mono text-[11px]">
+                          <strong className="font-sans text-gray-900 font-bold">Phone:</strong> {shipment.phoneNumber}
+                        </p>
+                        <p className="text-gray-500 font-mono text-[11px] truncate">
+                          <strong className="font-sans text-gray-900 font-bold">Email:</strong> {shipment.notifications?.find(n => n.type === 'email')?.recipient || "None"}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-1.5 text-[10px] text-gray-600 font-semibold bg-gray-50 p-1.5 rounded border border-gray-100 w-fit mt-1">
+                        <span className="bg-[#032B73] text-white font-mono text-[9px] px-1.5 py-0.5 rounded uppercase">ROUTE</span>
+                        <span>{shipment.originCountry} → {shipment.destinationCountry} {shipment.portGateway ? `(${shipment.portGateway})` : ""}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex sm:flex-row md:flex-col lg:flex-row items-stretch md:items-end gap-2 shrink-0 w-full md:w-auto">
+                      <button
+                        onClick={() => {
+                          setSelectedShipment(shipment);
+                          setActiveTab("update");
+                          setGlobalSearchQuery("");
+                        }}
+                        className="flex-1 md:flex-none text-center bg-[#032B73] hover:bg-blue-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition-all flex items-center justify-center space-x-1 shadow-sm"
+                      >
+                        <Sliders className="h-3.5 w-3.5" />
+                        <span>Transit Control</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          onTrackingRequest(shipment.trackingNumber);
+                          setGlobalSearchQuery("");
+                        }}
+                        className="flex-1 md:flex-none text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center space-x-1 border border-gray-200"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>Public Track</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
 
       {/* System Toast Alerts */}
