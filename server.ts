@@ -208,7 +208,7 @@ function getSeedShipments(): Shipment[] {
   ];
 }
 
-// Read database
+// Read database with automatic backward-compatibility sanitizer migration
 function readDatabase(): Shipment[] {
   if (!fs.existsSync(DATA_FILE)) {
     const seeds = getSeedShipments();
@@ -217,7 +217,112 @@ function readDatabase(): Shipment[] {
   }
   try {
     const data = fs.readFileSync(DATA_FILE, "utf-8");
-    return JSON.parse(data);
+    const shipments: Shipment[] = JSON.parse(data);
+    
+    let modified = false;
+    const sanitized = shipments.map(s => {
+      let isChanged = false;
+      if (!s.shipmentHealth) {
+        s.shipmentHealth = s.currentMilestoneIndex === 23 ? "optimal" : "optimal";
+        isChanged = true;
+      }
+      if (!s.delayStatus) {
+        s.delayStatus = "None";
+        isChanged = true;
+      }
+      if (!s.internalNotes) {
+        s.internalNotes = [
+          {
+            id: `note-init-${s.trackingNumber}`,
+            text: `Initial cargo reception verified. Service speed: ${s.serviceType}.`,
+            timestamp: s.bookingDate + "T10:00:00Z",
+            author: "System Admin"
+          }
+        ];
+        isChanged = true;
+      }
+      if (!s.documents) {
+        s.documents = [
+          {
+            id: `doc-${s.trackingNumber}-inv`,
+            name: `Invoice_${s.trackingNumber}.pdf`,
+            type: "invoice",
+            url: "#",
+            uploadedAt: s.bookingDate + "T10:15:00Z",
+            size: "142 KB"
+          }
+        ];
+        if (s.currentMilestoneIndex === 23) {
+          s.documents.push({
+            id: `doc-${s.trackingNumber}-rec`,
+            name: `Delivery_Receipt_${s.trackingNumber}.pdf`,
+            type: "receipt",
+            url: "#",
+            uploadedAt: s.expectedDeliveryDate + "T15:30:00Z",
+            size: "88 KB"
+          });
+        }
+        isChanged = true;
+      }
+      if (!s.paymentHistory) {
+        const rate = s.serviceType === "Express" ? 15 : s.serviceType === "Standard" ? 12 : 9;
+        const amountDue = Math.round((s.weight * rate + 50) * 100) / 100;
+        const status = s.currentMilestoneIndex === 23 ? "paid" : "partially_paid";
+        const amountPaid = status === "paid" ? amountDue : Math.round((amountDue * 0.6) * 100) / 100;
+        
+        const transactions = [];
+        if (amountPaid > 0) {
+          transactions.push({
+            id: `tx-${s.trackingNumber}-1`,
+            amount: amountPaid,
+            date: s.bookingDate,
+            method: "Credit Card",
+            reference: `REF-TX-${Math.floor(100000 + Math.random() * 900000)}`
+          });
+        }
+        
+        s.paymentHistory = {
+          status,
+          amountDue,
+          amountPaid,
+          transactions
+        };
+        isChanged = true;
+      }
+      if (!s.auditLogs || s.auditLogs.length === 0) {
+        s.auditLogs = [
+          {
+            id: `audit-${s.trackingNumber}-init`,
+            action: "Shipment Registered",
+            timestamp: s.bookingDate + "T09:00:00Z",
+            details: "Shipment initialized in administrative system.",
+            author: "System Admin"
+          }
+        ];
+        // Create secondary logs for milestones
+        if (s.milestoneHistory) {
+          s.milestoneHistory.forEach(h => {
+            s.auditLogs?.push({
+              id: `audit-${s.trackingNumber}-${h.milestoneIndex}`,
+              action: `Transit Milestone: ${h.milestoneName}`,
+              timestamp: h.timestamp,
+              details: h.description,
+              author: "Operations Specialist"
+            });
+          });
+        }
+        isChanged = true;
+      }
+      if (isChanged) {
+        modified = true;
+      }
+      return s;
+    });
+
+    if (modified) {
+      fs.writeFileSync(DATA_FILE, JSON.stringify(sanitized, null, 2));
+    }
+    return sanitized;
   } catch (error) {
     console.error("Error reading database, reverting to seed data", error);
     return getSeedShipments();
@@ -312,19 +417,9 @@ app.post("/api/login", (req, res) => {
 });
 
 // API: Get all shipments
-app.get("/api/shipments", async (req, res) => {
+app.get("/api/shipments", (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("shipments")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching shipments from Supabase:", error);
-      return res.status(500).json({ success: false, message: error.message });
-    }
-
-    const shipments = (data || []).map(mapDbShipmentToShipment);
+    const shipments = readDatabase();
     res.json({ success: true, shipments });
   } catch (err: any) {
     console.error("Exception fetching shipments:", err);
@@ -333,28 +428,20 @@ app.get("/api/shipments", async (req, res) => {
 });
 
 // API: Get a single shipment by tracking number
-app.get("/api/shipments/:trackingNumber", async (req, res) => {
+app.get("/api/shipments/:trackingNumber", (req, res) => {
   const { trackingNumber } = req.params;
   try {
-    const { data, error } = await supabase
-      .from("shipments")
-      .select("*")
-      .eq("tracking_number", trackingNumber.trim().toUpperCase())
-      .maybeSingle();
+    const shipments = readDatabase();
+    const shipment = shipments.find(s => s.trackingNumber.toUpperCase() === trackingNumber.trim().toUpperCase());
 
-    if (error) {
-      console.error("Error fetching single shipment from Supabase:", error);
-      return res.status(500).json({ success: false, message: error.message });
-    }
-
-    if (!data) {
+    if (!shipment) {
       return res.status(404).json({
         success: false,
         message: `Shipment with tracking number ${trackingNumber} could not be located.`
       });
     }
 
-    res.json({ success: true, shipment: mapDbShipmentToShipment(data) });
+    res.json({ success: true, shipment });
   } catch (err: any) {
     console.error("Exception fetching single shipment:", err);
     res.status(500).json({ success: false, message: err.message || err });
@@ -391,6 +478,10 @@ app.post("/api/shipments", (req, res) => {
     }
   ];
 
+  const rate = (newShipmentData.serviceType === "Express" ? 15 : newShipmentData.serviceType === "Standard" ? 12 : 9);
+  const weightNum = parseFloat(newShipmentData.weight) || 10;
+  const amountDue = Math.round((weightNum * rate + 50) * 100) / 100;
+
   const newShipment: Shipment = {
     trackingNumber: newShipmentData.trackingNumber,
     referenceNumber: newShipmentData.referenceNumber || `REF-${Math.floor(10000000 + Math.random() * 90000000)}`,
@@ -399,7 +490,7 @@ app.post("/api/shipments", (req, res) => {
     phoneNumber: newShipmentData.phoneNumber,
     originCountry: newShipmentData.originCountry || "Nigeria",
     destinationCountry: newShipmentData.destinationCountry,
-    weight: parseFloat(newShipmentData.weight) || 0.1,
+    weight: weightNum,
     numberOfPackages: parseInt(newShipmentData.numberOfPackages) || 1,
     serviceType: newShipmentData.serviceType || "Express",
     bookingDate: newShipmentData.bookingDate || nowStr.split('T')[0],
@@ -409,7 +500,42 @@ app.post("/api/shipments", (req, res) => {
     milestoneHistory,
     notifications: [],
     isPaused: false,
-    portGateway: newShipmentData.portGateway || ""
+    portGateway: newShipmentData.portGateway || "",
+    shipmentHealth: "optimal",
+    delayStatus: "None",
+    internalNotes: [
+      {
+        id: `note-init-${Date.now()}`,
+        text: `Shipment registered successfully. Expected delivery date: ${newShipmentData.expectedDeliveryDate || nowStr.split('T')[0]}.`,
+        timestamp: nowStr,
+        author: "System Admin"
+      }
+    ],
+    documents: [
+      {
+        id: `doc-inv-${Date.now()}`,
+        name: `Invoice_${newShipmentData.trackingNumber}.pdf`,
+        type: "invoice",
+        url: "#",
+        uploadedAt: nowStr,
+        size: "120 KB"
+      }
+    ],
+    paymentHistory: {
+      status: "pending",
+      amountDue,
+      amountPaid: 0,
+      transactions: []
+    },
+    auditLogs: [
+      {
+        id: `audit-init-${Date.now()}`,
+        action: "Shipment Registered",
+        timestamp: nowStr,
+        details: `Initial entry created with weight of ${weightNum} KG across ${newShipmentData.numberOfPackages || 1} package(s).`,
+        author: "System Admin"
+      }
+    ]
   };
 
   // Trigger default initial notification
@@ -559,6 +685,156 @@ app.delete("/api/shipments/:trackingNumber", (req, res) => {
   res.json({ success: true, message: `Shipment ${trackingNumber} has been successfully deleted.` });
 });
 
+// API: Update Shipment Health and Delay Status
+app.put("/api/shipments/:trackingNumber/status", (req, res) => {
+  const { trackingNumber } = req.params;
+  const { shipmentHealth, delayStatus, author } = req.body;
+  const shipments = readDatabase();
+  const index = shipments.findIndex(s => s.trackingNumber.toUpperCase() === trackingNumber.toUpperCase());
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: "Shipment not found." });
+  }
+
+  const shipment = shipments[index];
+  shipment.shipmentHealth = shipmentHealth ?? shipment.shipmentHealth;
+  shipment.delayStatus = delayStatus ?? shipment.delayStatus;
+
+  // Add audit log
+  shipment.auditLogs = shipment.auditLogs || [];
+  shipment.auditLogs.push({
+    id: `audit-${Date.now()}`,
+    action: "Status/Health Updated",
+    timestamp: new Date().toISOString(),
+    details: `Health set to: ${shipmentHealth}, Delay Status set to: ${delayStatus}`,
+    author: author || "System Admin"
+  });
+
+  writeDatabase(shipments);
+  res.json({ success: true, shipment });
+});
+
+// API: Add Internal Note
+app.post("/api/shipments/:trackingNumber/notes", (req, res) => {
+  const { trackingNumber } = req.params;
+  const { text, author } = req.body;
+  const shipments = readDatabase();
+  const index = shipments.findIndex(s => s.trackingNumber.toUpperCase() === trackingNumber.toUpperCase());
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: "Shipment not found." });
+  }
+
+  const shipment = shipments[index];
+  shipment.internalNotes = shipment.internalNotes || [];
+  const newNote = {
+    id: `note-${Date.now()}`,
+    text,
+    timestamp: new Date().toISOString(),
+    author: author || "System Admin"
+  };
+  shipment.internalNotes.push(newNote);
+
+  // Add audit log
+  shipment.auditLogs = shipment.auditLogs || [];
+  shipment.auditLogs.push({
+    id: `audit-${Date.now()}`,
+    action: "Internal Note Added",
+    timestamp: new Date().toISOString(),
+    details: `Added note: "${text.substring(0, 40)}${text.length > 40 ? '...' : ''}"`,
+    author: author || "System Admin"
+  });
+
+  writeDatabase(shipments);
+  res.json({ success: true, shipment, note: newNote });
+});
+
+// API: Add Document
+app.post("/api/shipments/:trackingNumber/documents", (req, res) => {
+  const { trackingNumber } = req.params;
+  const { name, type, url, size, author } = req.body;
+  const shipments = readDatabase();
+  const index = shipments.findIndex(s => s.trackingNumber.toUpperCase() === trackingNumber.toUpperCase());
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: "Shipment not found." });
+  }
+
+  const shipment = shipments[index];
+  shipment.documents = shipment.documents || [];
+  const newDoc = {
+    id: `doc-${Date.now()}`,
+    name,
+    type,
+    url: url || "#",
+    uploadedAt: new Date().toISOString(),
+    size: size || "Unknown Size"
+  };
+  shipment.documents.push(newDoc);
+
+  // Add audit log
+  shipment.auditLogs = shipment.auditLogs || [];
+  shipment.auditLogs.push({
+    id: `audit-${Date.now()}`,
+    action: "Document Uploaded",
+    timestamp: new Date().toISOString(),
+    details: `Uploaded ${type}: ${name}`,
+    author: author || "System Admin"
+  });
+
+  writeDatabase(shipments);
+  res.json({ success: true, shipment, document: newDoc });
+});
+
+// API: Add Transaction
+app.post("/api/shipments/:trackingNumber/transactions", (req, res) => {
+  const { trackingNumber } = req.params;
+  const { amount, method, reference, date, author } = req.body;
+  const shipments = readDatabase();
+  const index = shipments.findIndex(s => s.trackingNumber.toUpperCase() === trackingNumber.toUpperCase());
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: "Shipment not found." });
+  }
+
+  const shipment = shipments[index];
+  shipment.paymentHistory = shipment.paymentHistory || {
+    status: "pending",
+    amountDue: shipment.weight * 12 + 50,
+    amountPaid: 0,
+    transactions: []
+  };
+
+  const amountNum = parseFloat(amount);
+  const newTx = {
+    id: `tx-${Date.now()}`,
+    amount: amountNum,
+    date: date || new Date().toISOString().split('T')[0],
+    method: method || "Cash",
+    reference: reference || `REF-${Date.now()}`
+  };
+
+  shipment.paymentHistory.transactions.push(newTx);
+  shipment.paymentHistory.amountPaid = Math.round((shipment.paymentHistory.amountPaid + amountNum) * 100) / 100;
+  
+  if (shipment.paymentHistory.amountPaid >= shipment.paymentHistory.amountDue) {
+    shipment.paymentHistory.status = "paid";
+  } else if (shipment.paymentHistory.amountPaid > 0) {
+    shipment.paymentHistory.status = "partially_paid";
+  } else {
+    shipment.paymentHistory.status = "pending";
+  }
+
+  // Add audit log
+  shipment.auditLogs = shipment.auditLogs || [];
+  shipment.auditLogs.push({
+    id: `audit-${Date.now()}`,
+    action: "Payment Logged",
+    timestamp: new Date().toISOString(),
+    details: `Logged ${method} payment of $${amountNum}. Total paid: $${shipment.paymentHistory.amountPaid}`,
+    author: author || "System Admin"
+  });
+
+  writeDatabase(shipments);
+  res.json({ success: true, shipment, transaction: newTx });
+});
+
 // API: Backups manual trigger
 app.post("/api/backup", (req, res) => {
   const shipments = readDatabase();
@@ -567,18 +843,9 @@ app.post("/api/backup", (req, res) => {
 });
 
 // API: Stats endpoint
-app.get("/api/stats", async (req, res) => {
+app.get("/api/stats", (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("shipments")
-      .select("*");
-
-    if (error) {
-      console.error("Error fetching stats from Supabase:", error);
-      return res.status(500).json({ success: false, message: error.message });
-    }
-
-    const shipments = (data || []).map(mapDbShipmentToShipment);
+    const shipments = readDatabase();
     
     const totalShipments = shipments.length;
     const deliveredShipments = shipments.filter(s => s.currentMilestoneIndex === 23).length; // "Delivered" is index 23

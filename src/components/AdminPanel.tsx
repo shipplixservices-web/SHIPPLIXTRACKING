@@ -1,451 +1,176 @@
 import React, { useState, useEffect } from "react";
 import { 
   Shield, Key, LayoutDashboard, Plus, Eye, Edit2, Trash2, Pause, Play, Download, Search, 
-  MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, CheckCircle2, Sliders, Database, Save, LogOut
+  MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, CheckCircle2, Sliders, Database, Save, LogOut, Receipt,
+  FileText, Settings
 } from "lucide-react";
-import { Shipment, MILESTONES, DashboardStats } from "../types.js";
+import { Shipment, MILESTONES } from "../types.js";
 import ShipplixLogo from "./ShipplixLogo.tsx";
-import { supabase, mapDbShipmentToShipment } from "../supabaseClient.js";
+import { authService, AdminUser } from "../services/authService.ts";
+import { useShipments } from "../hooks/useShipments.ts";
+import { exportShipmentsToCSV } from "../utils/csvUtils.ts";
+import OperationsDashboard from "./OperationsDashboard.tsx";
+import FinanceModule from "./FinanceModule.tsx";
+import ReportsModule from "./ReportsModule.tsx";
+import SettingsModule from "./SettingsModule.tsx";
+import { getAppSettings } from "../utils/settingsUtils.ts";
+import { ShipmentManagementHub } from "./ShipmentManagementHub.tsx";
 
 interface AdminPanelProps {
   onTrackingRequest: (trackingNumber: string) => void;
 }
 
-function getSeedShipments(): Shipment[] {
-  const now = new Date("2026-06-27T01:27:36-07:00");
-  
-  const formatDate = (daysAgo: number, timeStr: string) => {
-    const d = new Date(now);
-    d.setDate(d.getDate() - daysAgo);
-    return `${d.toISOString().split('T')[0]}T${timeStr}`;
-  };
-
-  return [
-    {
-      trackingNumber: "SPX-20260625-5522",
-      referenceNumber: "REF-90823485",
-      senderName: "Mrs. Adebayo (Fashion Vendor)",
-      receiverName: "Sarah Jenkins",
-      phoneNumber: "+1 (415) 555-2671",
-      originCountry: "Nigeria",
-      destinationCountry: "United States",
-      weight: 45.2,
-      numberOfPackages: 3,
-      serviceType: "Express",
-      bookingDate: "2026-06-24",
-      expectedDeliveryDate: "2026-06-29",
-      shipmentNotes: "High-value African fabrics, hand-crafted designer Ankara gowns. Keep dry.",
-      currentMilestoneIndex: 6, // Customs Review
-      isPaused: false,
-      milestoneHistory: [
-        {
-          milestoneIndex: 0,
-          milestoneName: MILESTONES[0].name,
-          description: MILESTONES[0].description,
-          timestamp: formatDate(3, "10:42:00")
-        },
-        {
-          milestoneIndex: 2,
-          milestoneName: MILESTONES[2].name,
-          description: MILESTONES[2].description,
-          timestamp: formatDate(3, "14:15:00")
-        },
-        {
-          milestoneIndex: 3,
-          milestoneName: MILESTONES[3].name,
-          description: MILESTONES[3].description,
-          timestamp: formatDate(2, "09:30:00")
-        },
-        {
-          milestoneIndex: 5,
-          milestoneName: MILESTONES[5].name,
-          description: MILESTONES[5].description,
-          timestamp: formatDate(2, "16:45:00")
-        },
-        {
-          milestoneIndex: 6,
-          milestoneName: MILESTONES[6].name,
-          description: MILESTONES[6].description,
-          timestamp: formatDate(1, "11:20:00")
-        }
-      ],
-      notifications: [
-        {
-          id: "notif-1",
-          timestamp: formatDate(3, "10:42:00"),
-          type: "email",
-          recipient: "shipplixservices@gmail.com",
-          milestoneName: "Shipment Received",
-          status: "sent"
-        },
-        {
-          id: "notif-2",
-          timestamp: formatDate(2, "16:45:00"),
-          type: "email",
-          recipient: "shipplixservices@gmail.com",
-          milestoneName: "Regulatory Inspection",
-          status: "sent"
-        },
-        {
-          id: "notif-3",
-          timestamp: formatDate(1, "11:20:00"),
-          type: "whatsapp",
-          recipient: "+1 (415) 555-2671",
-          milestoneName: "Customs Review",
-          status: "sent"
-        }
-      ]
-    },
-    {
-      trackingNumber: "SPX-20260620-1080",
-      referenceNumber: "REF-29103847",
-      senderName: "Emeka O. (Wholesaler)",
-      receiverName: "Richard Sterling",
-      phoneNumber: "+44 7911 123456",
-      originCountry: "Nigeria",
-      destinationCountry: "United Kingdom",
-      weight: 120.5,
-      numberOfPackages: 8,
-      serviceType: "Standard",
-      bookingDate: "2026-06-20",
-      expectedDeliveryDate: "2026-06-26",
-      shipmentNotes: "Bulk food items (Garri, Yam flour, Egusi, Spices) for distribution.",
-      currentMilestoneIndex: 23, // Delivered
-      isPaused: false,
-      milestoneHistory: Array.from({ length: 24 }, (_, i) => {
-        const daysAgo = 6 - Math.floor(i * 0.25);
-        const hour = 9 + (i % 8);
-        return {
-          milestoneIndex: i,
-          milestoneName: MILESTONES[i].name,
-          description: MILESTONES[i].description,
-          timestamp: formatDate(daysAgo, `${hour.toString().padStart(2, '0')}:15:00`)
-        };
-      }),
-      notifications: [
-        {
-          id: "notif-delivered-email",
-          timestamp: formatDate(1, "15:30:00"),
-          type: "email",
-          recipient: "shipplixservices@gmail.com",
-          milestoneName: "Delivered",
-          status: "sent"
-        }
-      ]
-    },
-    {
-      trackingNumber: "SPX-20260626-3120",
-      referenceNumber: "REF-74839210",
-      senderName: "Ngozi A. (Retailer)",
-      receiverName: "Amina Yusuf",
-      phoneNumber: "+1 (647) 555-8392",
-      originCountry: "Nigeria",
-      destinationCountry: "Canada",
-      weight: 12.8,
-      numberOfPackages: 1,
-      serviceType: "Economy",
-      bookingDate: "2026-06-26",
-      expectedDeliveryDate: "2026-07-06",
-      shipmentNotes: "Organic cosmetics and hair care oils.",
-      currentMilestoneIndex: 2, // Shipment Verified
-      isPaused: false,
-      milestoneHistory: [
-        {
-          milestoneIndex: 0,
-          milestoneName: MILESTONES[0].name,
-          description: MILESTONES[0].description,
-          timestamp: formatDate(1, "08:15:00")
-        },
-        {
-          milestoneIndex: 2,
-          milestoneName: MILESTONES[2].name,
-          description: MILESTONES[2].description,
-          timestamp: formatDate(0, "15:30:00")
-        }
-      ],
-      notifications: []
-    },
-    {
-      trackingNumber: "SPX-20260623-2990",
-      referenceNumber: "REF-43928104",
-      senderName: "Chinonso Uzor",
-      receiverName: "Michael Chang",
-      phoneNumber: "+1 (212) 555-0199",
-      originCountry: "Nigeria",
-      destinationCountry: "United States",
-      weight: 18.0,
-      numberOfPackages: 2,
-      serviceType: "Express",
-      bookingDate: "2026-06-23",
-      expectedDeliveryDate: "2026-06-27",
-      shipmentNotes: "Hand-carved wooden sculptures and art exhibits.",
-      currentMilestoneIndex: 22, // Out for Delivery
-      isPaused: false,
-      milestoneHistory: Array.from({ length: 23 }, (_, i) => {
-        const daysAgo = 4 - Math.floor(i * 0.18);
-        const hour = 8 + (i % 9);
-        return {
-          milestoneIndex: i,
-          milestoneName: MILESTONES[i].name,
-          description: MILESTONES[i].description,
-          timestamp: formatDate(daysAgo, `${hour.toString().padStart(2, '0')}:45:00`)
-        };
-      }),
-      notifications: []
-    }
-  ];
-}
-
 export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
-  // Auth state
+  // Authentication states
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
-  const [adminUser, setAdminUser] = useState<{ email: string; name: string } | null>(null);
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
 
-  // Dashboard Data state
-  const [shipments, setShipments] = useState<Shipment[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalShipments: 0,
-    deliveredShipments: 0,
-    inTransit: 0,
-    pendingVerification: 0,
-    todayBookings: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [systemMessage, setSystemMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  // Check initial local session on mount
+  useEffect(() => {
+    const session = authService.getLocalSession();
+    if (session) {
+      setAdminUser(session);
+      setIsAuthenticated(true);
+    }
+  }, []);
 
-  // Navigation state inside Admin
-  const [activeTab, setActiveTab] = useState<"fleet" | "add" | "update" | "backups">("fleet");
+  // Use the modular shipment dashboard hook
+  const {
+    shipments,
+    loading,
+    actionLoading,
+    systemMessage,
+    stats,
+    searchQuery,
+    setSearchQuery,
+    filterDestination,
+    setFilterDestination,
+    filterService,
+    setFilterService,
+    filterStatus,
+    setFilterStatus,
+    filteredShipments,
+    uniqueDestinations,
+    registerShipment,
+    updateShipmentDetails,
+    updateMilestone,
+    deleteShipment,
+    togglePauseStatus,
+    triggerBackup,
+    showSystemMessage,
+    updateStatusAndHealth,
+    addInternalNote,
+    uploadDocument,
+    addPaymentTransaction
+  } = useShipments(isAuthenticated);
 
-  // Selection states
+  // Component local states for UI Navigation & Forms
+  const [activeTab, setActiveTab] = useState<"dashboard" | "finance" | "reports" | "fleet" | "add" | "update" | "backups" | "settings">("dashboard");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [editingShipment, setEditingShipment] = useState<Shipment | null>(null);
 
-  // Filter & Search states
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterDestination, setFilterDestination] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterService, setFilterService] = useState("");
+  // Load settings
+  const settings = getAppSettings();
 
-  // Create Shipment form state
   const [newShipment, setNewShipment] = useState({
     trackingNumber: "",
     referenceNumber: "",
     senderName: "",
     receiverName: "",
     phoneNumber: "",
-    originCountry: "Nigeria",
-    destinationCountry: "United States",
+    originCountry: settings.countries.supportedOrigins[0] || "Nigeria",
+    destinationCountry: settings.countries.supportedDestinations[0] || "United States",
     weight: "10.0",
     numberOfPackages: "1",
-    serviceType: "Express" as "Express" | "Standard" | "Economy",
+    serviceType: "Express" as const,
     bookingDate: new Date().toISOString().split('T')[0],
     expectedDeliveryDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
     shipmentNotes: "",
     portGateway: ""
   });
 
-  // Edit Shipment state (when editing core fields)
-  const [editingShipment, setEditingShipment] = useState<Shipment | null>(null);
-
-  // Milestone Update state
   const [milestoneUpdate, setMilestoneUpdate] = useState({
     milestoneIndex: 0,
     customDescription: ""
   });
 
-  // Generate a random tracking number
-  const handleGenerateTracking = () => {
-    setNewShipment(prev => {
-      const dateStr = (prev.bookingDate || new Date().toISOString().split('T')[0]).replace(/-/g, "");
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
-      return {
-        ...prev,
-        trackingNumber: `SPX-${dateStr}-${randomNum}`
-      };
-    });
-  };
-
+  // Dynamic visual theme listener
   useEffect(() => {
-    // Check local storage and Supabase session for pre-existing session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session && session.user) {
-        setIsAuthenticated(true);
-        setAdminUser({
-          email: session.user.email || "",
-          name: "Shipplix Operations Admin"
-        });
-      } else {
-        const savedSession = localStorage.getItem("shipplix_admin_session");
-        if (savedSession) {
-          try {
-            const parsed = JSON.parse(savedSession);
-            setIsAuthenticated(true);
-            setAdminUser(parsed.user);
-          } catch {
-            localStorage.removeItem("shipplix_admin_session");
-          }
-        }
+    const applyTheme = () => {
+      const activeSettings = getAppSettings();
+      const theme = activeSettings.theme.themeName;
+      let primaryColor = "#032B73";
+      let primaryHover = "#1e40af";
+      let secondaryColor = "#ffd700";
+
+      if (theme === "Cosmic Indigo") {
+        primaryColor = "#4F46E5";
+        primaryHover = "#4338ca";
+        secondaryColor = "#c084fc";
+      } else if (theme === "Teal Forest") {
+        primaryColor = "#0D9488";
+        primaryHover = "#0f766e";
+        secondaryColor = "#34d399";
       }
+
+      let styleEl = document.getElementById("shipplix-theme-overrides");
+      if (!styleEl) {
+        styleEl = document.createElement("style");
+        styleEl.id = "shipplix-theme-overrides";
+        document.head.appendChild(styleEl);
+      }
+      styleEl.innerHTML = `
+        /* Dynamic Theme overrides */
+        .text-\\[\\#032B73\\] { color: ${primaryColor} !important; }
+        .bg-\\[\\#032B73\\] { background-color: ${primaryColor} !important; }
+        .hover\\:bg-blue-900:hover { background-color: ${primaryHover} !important; }
+        .border-\\[\\#032B73\\] { border-color: ${primaryColor} !important; }
+        .focus\\:ring-\\[\\#032B73\\]:focus { --tw-ring-color: ${primaryColor} !important; }
+        .focus\\:ring-2:focus { --tw-ring-color: ${primaryColor} !important; }
+        .text-\\[\\#FFD700\\] { color: ${secondaryColor} !important; }
+        .border-b-2.border-\\[\\#032B73\\] { border-color: ${primaryColor} !important; text-color: ${primaryColor} !important; }
+      `;
     };
-    checkSession();
+
+    applyTheme();
+    window.addEventListener("shipplixSettingsChanged", applyTheme);
+    return () => {
+      window.removeEventListener("shipplixSettingsChanged", applyTheme);
+    };
   }, []);
 
+  // Automatically select first shipment as default selected to match old behavior
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchDashboardData();
-    }
-  }, [isAuthenticated]);
-
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      // Query directly from Supabase
-      const { data: dbShipments, error: shipmentsError } = await supabase
-        .from("shipments")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (shipmentsError) {
-        throw shipmentsError;
-      }
-
-      let mappedShipments = (dbShipments || []).map(mapDbShipmentToShipment);
-
-      // If database is empty, auto-seed it!
-      if (mappedShipments.length === 0) {
-        console.log("Database is empty. Seeding mock shipments...");
-        const seedShipments = getSeedShipments();
-        
-        const dbSeeds = seedShipments.map(s => ({
-          tracking_number: s.trackingNumber,
-          reference_number: s.referenceNumber,
-          sender_name: s.senderName,
-          receiver_name: s.receiverName,
-          phone_number: s.phoneNumber,
-          origin_country: s.originCountry,
-          destination_country: s.destinationCountry,
-          weight: s.weight,
-          number_of_packages: s.numberOfPackages,
-          service_type: s.serviceType,
-          booking_date: s.bookingDate,
-          expected_delivery_date: s.expectedDeliveryDate,
-          shipment_notes: s.shipmentNotes,
-          current_milestone_index: s.currentMilestoneIndex,
-          milestone_history: s.milestoneHistory,
-          notifications: s.notifications,
-          is_paused: s.isPaused,
-          port_gateway: s.portGateway || ""
-        }));
-
-        const { data: seededData, error: seedError } = await supabase
-          .from("shipments")
-          .insert(dbSeeds)
-          .select();
-
-        if (seedError) {
-          console.error("Error seeding shipments:", seedError);
-        } else if (seededData) {
-          mappedShipments = seededData.map(mapDbShipmentToShipment);
-          console.log("Seeding successful! Seeded rows:", mappedShipments.length);
-          
-          // Seed the shipment_events table too for normalization!
-          const dbEvents = [];
-          for (const s of seededData) {
-            const milestoneHistory = s.milestone_history || [];
-            for (const h of milestoneHistory) {
-              dbEvents.push({
-                shipment_id: s.id,
-                tracking_number: s.tracking_number,
-                milestone_index: h.milestoneIndex,
-                milestone_name: h.milestoneName,
-                description: h.description,
-                timestamp: h.timestamp
-              });
-            }
-          }
-          if (dbEvents.length > 0) {
-            await supabase.from("shipment_events").insert(dbEvents);
-          }
-        }
-      }
-
-      setShipments(mappedShipments);
-
-      if (mappedShipments.length > 0 && !selectedShipment) {
-        setSelectedShipment(mappedShipments[0]);
-        setMilestoneUpdate({
-          milestoneIndex: mappedShipments[0].currentMilestoneIndex,
-          customDescription: MILESTONES[mappedShipments[0].currentMilestoneIndex].description
-        });
-      }
-
-      // Calculate stats directly in the frontend
-      const totalShipments = mappedShipments.length;
-      const deliveredShipments = mappedShipments.filter(s => s.currentMilestoneIndex === 23).length; // Delivered index is 23
-      const pendingVerification = mappedShipments.filter(s => s.currentMilestoneIndex === 0).length;
-      const inTransit = mappedShipments.filter(s => s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 23).length;
-      
-      const todayStr = new Date().toISOString().split('T')[0];
-      const todayBookings = mappedShipments.filter(s => s.bookingDate === todayStr).length;
-
-      setStats({
-        totalShipments,
-        deliveredShipments,
-        inTransit,
-        pendingVerification,
-        todayBookings
+    if (shipments.length > 0 && !selectedShipment) {
+      setSelectedShipment(shipments[0]);
+      setMilestoneUpdate({
+        milestoneIndex: shipments[0].currentMilestoneIndex,
+        customDescription: MILESTONES[shipments[0].currentMilestoneIndex].description
       });
-
-    } catch (err: any) {
-      console.error("Error fetching dashboard data", err);
-      showSystemMessage("error", `Unable to load dashboard fleet: ${err.message || err}`);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [shipments, selectedShipment]);
 
-  const showSystemMessage = (type: 'success' | 'error', text: string) => {
-    setSystemMessage({ type, text });
-    setTimeout(() => {
-      setSystemMessage(null);
-    }, 5000);
-  };
+  // Find matching active shipment from fleet array to prevent stale local selection state
+  const activeShipment = selectedShipment 
+    ? shipments.find(s => s.trackingNumber.toUpperCase() === selectedShipment.trackingNumber.toUpperCase()) || selectedShipment 
+    : null;
 
-  // Auth handler using Supabase Auth
+  // Auth Handlers using the AuthService
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
     setAuthLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        setAuthError(error.message);
-      } else if (data && data.user) {
-        setIsAuthenticated(true);
-        const adminData = {
-          email: data.user.email || "",
-          name: "Shipplix Operations Admin"
-        };
-        setAdminUser(adminData);
-        localStorage.setItem("shipplix_admin_session", JSON.stringify({
-          success: true,
-          user: adminData
-        }));
-      } else {
-        setAuthError("Failed to authenticate. Invalid administrator credentials.");
-      }
-    } catch (err) {
-      setAuthError("Failed to authenticate. Connection error.");
+      const user = await authService.login(email, password);
+      setAdminUser(user);
+      setIsAuthenticated(true);
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to authenticate. Connection error.");
     } finally {
       setAuthLoading(false);
     }
@@ -454,122 +179,47 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
   const handleLogout = async () => {
     setIsAuthenticated(false);
     setAdminUser(null);
-    localStorage.removeItem("shipplix_admin_session");
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error("Error signing out from Supabase", err);
-    }
+    setSelectedShipment(null);
+    await authService.logout();
   };
 
-  // Create Shipment handler
-  const handleCreateShipment = async (e: React.FormEvent) => {
+  // Generate unique ID in the form matching the old action
+  const handleGenerateTracking = () => {
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0].replace(/-/g, "");
+    const randomFour = Math.floor(1000 + Math.random() * 9000);
+    const generatedId = `SPX-${dateStr}-${randomFour}`;
+    setNewShipment(prev => ({ ...prev, trackingNumber: generatedId }));
+  };
+
+  // Create Shipment Form Submission
+  const handleCreateShipmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setActionLoading("create");
-    try {
-      const trackingNum = newShipment.trackingNumber.trim().toUpperCase();
-      if (!trackingNum) {
-        showSystemMessage("error", "Tracking number is required.");
-        return;
-      }
+    const trackingNum = newShipment.trackingNumber.trim().toUpperCase();
+    if (!trackingNum) {
+      showSystemMessage("error", "Tracking number is required.");
+      return;
+    }
 
-      // Check uniqueness
-      const { data: existing, error: checkError } = await supabase
-        .from("shipments")
-        .select("tracking_number")
-        .eq("tracking_number", trackingNum)
-        .maybeSingle();
+    const success = await registerShipment({
+      trackingNumber: trackingNum,
+      referenceNumber: newShipment.referenceNumber,
+      senderName: newShipment.senderName,
+      receiverName: newShipment.receiverName,
+      phoneNumber: newShipment.phoneNumber,
+      originCountry: newShipment.originCountry,
+      destinationCountry: newShipment.destinationCountry,
+      weight: newShipment.weight,
+      numberOfPackages: newShipment.numberOfPackages,
+      serviceType: newShipment.serviceType,
+      bookingDate: newShipment.bookingDate,
+      expectedDeliveryDate: newShipment.expectedDeliveryDate,
+      shipmentNotes: newShipment.shipmentNotes,
+      portGateway: newShipment.portGateway
+    });
 
-      if (existing) {
-        showSystemMessage("error", "A shipment with this tracking number already exists.");
-        return;
-      }
-
-      // Create initial history entry
-      const initialMilestoneIndex = 0; // Shipment Received
-      const milestoneName = MILESTONES[initialMilestoneIndex].name;
-      const description = MILESTONES[initialMilestoneIndex].description;
-      const nowStr = new Date().toISOString();
-
-      const milestoneHistory = [
-        {
-          milestoneIndex: initialMilestoneIndex,
-          milestoneName,
-          description,
-          timestamp: nowStr
-        }
-      ];
-
-      const referenceNumber = newShipment.referenceNumber || `REF-${Math.floor(10000000 + Math.random() * 90000000)}`;
-
-      const initialNotifs = [
-        {
-          id: `notif-email-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          timestamp: nowStr,
-          type: "email",
-          recipient: "shipplixservices@gmail.com",
-          milestoneName,
-          status: "sent"
-        },
-        {
-          id: `notif-wa-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          timestamp: nowStr,
-          type: "whatsapp",
-          recipient: newShipment.phoneNumber || "+234 916 827 3513",
-          milestoneName,
-          status: "sent"
-        }
-      ];
-
-      const dbShipment = {
-        tracking_number: trackingNum,
-        reference_number: referenceNumber,
-        sender_name: newShipment.senderName,
-        receiver_name: newShipment.receiverName,
-        phone_number: newShipment.phoneNumber,
-        origin_country: newShipment.originCountry || "Nigeria",
-        destination_country: newShipment.destinationCountry,
-        weight: parseFloat(newShipment.weight) || 0.1,
-        number_of_packages: parseInt(newShipment.numberOfPackages) || 1,
-        service_type: newShipment.serviceType || "Express",
-        booking_date: newShipment.bookingDate || nowStr.split('T')[0],
-        expected_delivery_date: newShipment.expectedDeliveryDate || nowStr.split('T')[0],
-        shipment_notes: newShipment.shipmentNotes || "",
-        current_milestone_index: initialMilestoneIndex,
-        milestone_history: milestoneHistory,
-        notifications: initialNotifs,
-        is_paused: false,
-        port_gateway: newShipment.portGateway || ""
-      };
-
-      const { data: insertedData, error: insertError } = await supabase
-        .from("shipments")
-        .insert([dbShipment])
-        .select();
-
-      if (insertError) {
-        showSystemMessage("error", insertError.message || "Failed to register shipment.");
-        return;
-      }
-
-      if (insertedData && insertedData[0]) {
-        const mapped = mapDbShipmentToShipment(insertedData[0]);
-        if (mapped) {
-          // Insert normalized shipment_events table too!
-          await supabase.from("shipment_events").insert([{
-            shipment_id: insertedData[0].id,
-            tracking_number: trackingNum,
-            milestone_index: initialMilestoneIndex,
-            milestone_name: milestoneName,
-            description: description,
-            timestamp: nowStr
-          }]);
-
-          showSystemMessage("success", `Shipment ${mapped.trackingNumber} registered successfully!`);
-        }
-      }
-
-      // Reset form
+    if (success) {
+      // Reset Form State
       setNewShipment({
         trackingNumber: "",
         referenceNumber: "",
@@ -586,277 +236,62 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
         shipmentNotes: "",
         portGateway: ""
       });
-      fetchDashboardData();
       setActiveTab("fleet");
-    } catch (err: any) {
-      console.error("Exception during shipment registration:", err);
-      showSystemMessage("error", `Network failure registering shipment: ${err?.message || err}`);
-    } finally {
-      setActionLoading(null);
     }
   };
 
-  // Edit core fields handler
-  const handleUpdateCoreShipment = async (e: React.FormEvent) => {
+  // Edit Core Fields Form Submission
+  const handleUpdateCoreShipmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingShipment) return;
-    setActionLoading("edit");
-    try {
-      const { data, error } = await supabase
-        .from("shipments")
-        .update({
-          sender_name: editingShipment.senderName,
-          receiver_name: editingShipment.receiverName,
-          phone_number: editingShipment.phoneNumber,
-          origin_country: editingShipment.originCountry,
-          destination_country: editingShipment.destinationCountry,
-          weight: parseFloat(String(editingShipment.weight)) || 0.1,
-          number_of_packages: parseInt(String(editingShipment.numberOfPackages)) || 1,
-          service_type: editingShipment.serviceType,
-          booking_date: editingShipment.bookingDate,
-          expected_delivery_date: editingShipment.expectedDeliveryDate,
-          shipment_notes: editingShipment.shipmentNotes,
-          port_gateway: editingShipment.portGateway
-        })
-         .eq("tracking_number", editingShipment.trackingNumber.toUpperCase())
-         .select();
 
-      if (error) {
-        showSystemMessage("error", error.message || "Update failed.");
-        return;
+    const success = await updateShipmentDetails(editingShipment);
+    if (success) {
+      if (selectedShipment && selectedShipment.trackingNumber.toUpperCase() === editingShipment.trackingNumber.toUpperCase()) {
+        setSelectedShipment(editingShipment);
       }
-
-      if (data && data[0]) {
-        const mapped = mapDbShipmentToShipment(data[0]);
-        showSystemMessage("success", `Shipment details updated successfully!`);
-        setEditingShipment(null);
-        if (selectedShipment && selectedShipment.trackingNumber.toUpperCase() === mapped!.trackingNumber.toUpperCase()) {
-          setSelectedShipment(mapped);
-        }
-        fetchDashboardData();
-      }
-    } catch (err) {
-      showSystemMessage("error", "Network error updating details.");
-    } finally {
-      setActionLoading(null);
+      setEditingShipment(null);
     }
   };
 
-  // Milestone transition handler
-  const handleUpdateMilestone = async (e: React.FormEvent) => {
+  // Milestone Update Form Submission
+  const handleUpdateMilestoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedShipment) return;
-    setActionLoading("milestone");
 
-    try {
-      const parsedIndex = parseInt(String(milestoneUpdate.milestoneIndex));
-      if (parsedIndex < 0 || parsedIndex >= MILESTONES.length) {
-        showSystemMessage("error", "Invalid milestone index.");
-        return;
-      }
-
-      const milestoneName = MILESTONES[parsedIndex].name;
-      const description = milestoneUpdate.customDescription || MILESTONES[parsedIndex].description;
-      const timestamp = new Date().toISOString();
-
-      const existingHistory = [...(selectedShipment.milestoneHistory || [])];
-      const historyIndex = existingHistory.findIndex(h => h.milestoneIndex === parsedIndex);
-      const newHistoryEntry = {
-        milestoneIndex: parsedIndex,
-        milestoneName,
-        description,
-        timestamp
-      };
-
-      if (historyIndex !== -1) {
-        existingHistory[historyIndex] = newHistoryEntry;
-      } else {
-        existingHistory.push(newHistoryEntry);
-      }
-      existingHistory.sort((a, b) => a.milestoneIndex - b.milestoneIndex);
-
-      const newNotifs = [
-        {
-          id: `notif-email-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          timestamp,
-          type: "email",
-          recipient: "shipplixservices@gmail.com",
-          milestoneName,
-          status: "sent"
-        },
-        {
-          id: `notif-wa-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          timestamp,
-          type: "whatsapp",
-          recipient: selectedShipment.phoneNumber || "+234 916 827 3513",
-          milestoneName,
-          status: "sent"
-        }
-      ];
-      const updatedNotifications = [...(selectedShipment.notifications || []), ...newNotifs];
-
-      const { data, error } = await supabase
-        .from("shipments")
-        .update({
-          current_milestone_index: parsedIndex,
-          milestone_history: existingHistory,
-          notifications: updatedNotifications
-        })
-        .eq("tracking_number", selectedShipment.trackingNumber.toUpperCase())
-        .select();
-
-      if (error) {
-        showSystemMessage("error", error.message || "Failed to transition milestone.");
-        return;
-      }
-
-      if (data && data[0]) {
-        const mapped = mapDbShipmentToShipment(data[0]);
-        
-        // Create event in shipment_events
-        await supabase.from("shipment_events").insert([{
-          shipment_id: data[0].id,
-          tracking_number: selectedShipment.trackingNumber.toUpperCase(),
-          milestone_index: parsedIndex,
-          milestone_name: milestoneName,
-          description: description,
-          timestamp: timestamp
-        }]);
-
-        showSystemMessage("success", `Transit stage advanced for ${selectedShipment.trackingNumber}! Notifications simulated successfully.`);
-        setSelectedShipment(mapped);
-        fetchDashboardData();
-      }
-    } catch (err) {
-      showSystemMessage("error", "Network error during stage advancement.");
-    } finally {
-      setActionLoading(null);
+    const updated = await updateMilestone(selectedShipment, milestoneUpdate.milestoneIndex, milestoneUpdate.customDescription);
+    if (updated) {
+      setSelectedShipment(updated);
     }
   };
 
-  // Delete handler
-  const handleDeleteShipment = async (trackingNumber: string) => {
-    if (!confirm(`Are you absolutely sure you want to delete shipment ${trackingNumber}? This action is permanent.`)) {
-      return;
-    }
-    setActionLoading(`delete-${trackingNumber}`);
-    try {
-      const { error } = await supabase
-        .from("shipments")
-        .delete()
-        .eq("tracking_number", trackingNumber.toUpperCase());
-
-      if (error) {
-        showSystemMessage("error", error.message || "Delete request failed.");
-        return;
-      }
-
-      showSystemMessage("success", `Shipment ${trackingNumber} has been deleted.`);
-      if (selectedShipment?.trackingNumber === trackingNumber) {
-        setSelectedShipment(null);
-      }
-      fetchDashboardData();
-    } catch (err) {
-      showSystemMessage("error", "Network error deleting shipment.");
-    } finally {
-      setActionLoading(null);
+  // Delete Action
+  const handleDeleteAction = async (trackingNumber: string) => {
+    const success = await deleteShipment(trackingNumber);
+    if (success && selectedShipment?.trackingNumber === trackingNumber) {
+      setSelectedShipment(null);
     }
   };
 
-  // Hold / Resume Handlers
-  const handlePauseToggle = async (shipmentToToggle: Shipment) => {
-    const isHold = !shipmentToToggle.isPaused;
-    setActionLoading(`pause-${shipmentToToggle.trackingNumber}`);
-
-    try {
-      const { data, error } = await supabase
-        .from("shipments")
-        .update({ is_paused: isHold })
-        .eq("tracking_number", shipmentToToggle.trackingNumber.toUpperCase())
-        .select();
-
-      if (error) {
-        showSystemMessage("error", "Failed to toggle pause status.");
-        return;
-      }
-
-      if (data && data[0]) {
-        const mapped = mapDbShipmentToShipment(data[0]);
-        showSystemMessage("success", `Shipment status updated to ${isHold ? "ON HOLD" : "ACTIVE TRANSIT"}.`);
-        if (selectedShipment?.trackingNumber === shipmentToToggle.trackingNumber) {
-          setSelectedShipment(mapped);
-        }
-        fetchDashboardData();
-      }
-    } catch (err) {
-      showSystemMessage("error", "Connection failed toggling pause.");
-    } finally {
-      setActionLoading(null);
+  // Hold / Resume Toggle Action
+  const handlePauseToggleAction = async (shipment: Shipment) => {
+    const updated = await togglePauseStatus(shipment);
+    if (updated && selectedShipment?.trackingNumber === shipment.trackingNumber) {
+      setSelectedShipment(updated);
     }
   };
 
-  // Trigger manual backup
-  const handleTriggerBackup = async () => {
-    setActionLoading("backup");
-    try {
-      const response = await fetch("/api/backup", { method: "POST" });
-      const data = await response.json();
-
-      if (data.success) {
-        showSystemMessage("success", `Encrypted data backup completed. Logged to system server as: ${data.backupFile}`);
-      } else {
-        showSystemMessage("error", "Backup routine failed.");
-      }
-    } catch (err) {
-      showSystemMessage("error", "Network timeout executing backup.");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  // Export to Excel / CSV format
+  // Export CSV helper
   const handleExportCSV = () => {
-    if (shipments.length === 0) return;
-
-    // Create CSV content headers
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Tracking Number,Reference Number,Sender Name,Receiver Name,Phone Number,Origin,Destination,Weight (KG),Packages,Service Type,Booking Date,Expected Delivery Date,Notes,Paused,Current Milestone\n";
-
-    // Loop through shipments
-    shipments.forEach(s => {
-      const row = [
-        s.trackingNumber,
-        s.referenceNumber,
-        `"${s.senderName.replace(/"/g, '""')}"`,
-        `"${s.receiverName.replace(/"/g, '""')}"`,
-        `"${s.phoneNumber || ''}"`,
-        s.originCountry,
-        s.destinationCountry,
-        s.weight,
-        s.numberOfPackages,
-        s.serviceType,
-        s.bookingDate,
-        s.expectedDeliveryDate,
-        `"${(s.shipmentNotes || '').replace(/"/g, '""')}"`,
-        s.isPaused ? "YES" : "NO",
-        `"${MILESTONES[s.currentMilestoneIndex].name}"`
-      ].join(",");
-      csvContent += row + "\n";
-    });
-
-    // Download flow
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `SHIPPLIX_CARGO_FLEET_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    showSystemMessage("success", "Exported database successfully. Ready for Microsoft Excel.");
+    const result = exportShipmentsToCSV(shipments);
+    if (result.success) {
+      showSystemMessage("success", result.message);
+    } else {
+      showSystemMessage("error", result.message);
+    }
   };
 
-  // Set the shipment for milestone updating console
+  // Set selected shipment for milestone update control tab
   const selectForMilestoneUpdate = (sh: Shipment) => {
     setSelectedShipment(sh);
     setMilestoneUpdate({
@@ -865,33 +300,6 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
     });
     setActiveTab("update");
   };
-
-  // Filter & Search matching
-  const filteredShipments = shipments.filter(s => {
-    const query = searchQuery.trim().toLowerCase();
-    const matchesSearch = 
-      s.trackingNumber.toLowerCase().includes(query) ||
-      s.referenceNumber.toLowerCase().includes(query) ||
-      s.senderName.toLowerCase().includes(query) ||
-      s.receiverName.toLowerCase().includes(query);
-      
-    const matchesDest = filterDestination ? s.destinationCountry.toLowerCase() === filterDestination.toLowerCase() : true;
-    const matchesService = filterService ? s.serviceType.toLowerCase() === filterService.toLowerCase() : true;
-    
-    // Status matching (Delivered index is 23, On Hold checks boolean, In Transit is anything between 1 and 22)
-    let matchesStatus = true;
-    if (filterStatus) {
-      if (filterStatus === "paused") matchesStatus = s.isPaused;
-      else if (filterStatus === "delivered") matchesStatus = s.currentMilestoneIndex === 23;
-      else if (filterStatus === "transit") matchesStatus = s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 23 && !s.isPaused;
-      else if (filterStatus === "pending") matchesStatus = s.currentMilestoneIndex === 0;
-    }
-
-    return matchesSearch && matchesDest && matchesService && matchesStatus;
-  });
-
-  // Unique list of destinations in DB for filter
-  const uniqueDestinations = Array.from(new Set(shipments.map(s => s.destinationCountry)));
 
   if (!isAuthenticated) {
     return (
@@ -940,7 +348,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
               id="admin-login-submit"
               type="submit"
               disabled={authLoading}
-              className="w-full bg-[#032B73] text-[#FFD700] hover:bg-blue-900 active:scale-98 transition-all font-black text-sm py-3 rounded-lg flex items-center justify-center space-x-2 shadow"
+              className="w-full bg-[#032B73] text-[#FFD700] hover:bg-blue-900 active:scale-98 transition-all font-black text-sm py-3 rounded-lg flex items-center justify-center space-x-2 shadow text-center"
             >
               {authLoading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -1076,15 +484,54 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
       {/* Tab Navigation links */}
       <div className="flex border-b border-gray-200 overflow-x-auto pb-px">
         <button
+          id="tab-dashboard"
+          onClick={() => setActiveTab("dashboard")}
+          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
+            activeTab === "dashboard" 
+              ? "border-b-2 border-[#032B73] text-[#032B73]" 
+              : "border-transparent text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          <LayoutDashboard className="h-4.5 w-4.5 text-blue-800" />
+          <span>Executive Dashboard</span>
+        </button>
+
+        <button
+          id="tab-finance"
+          onClick={() => setActiveTab("finance")}
+          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
+            activeTab === "finance" 
+              ? "border-b-2 border-[#032B73] text-[#032B73]" 
+              : "border-transparent text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          <Receipt className="h-4.5 w-4.5 text-blue-800" />
+          <span>Finance Ledger</span>
+        </button>
+
+        <button
+          id="tab-reports"
+          onClick={() => setActiveTab("reports")}
+          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
+            activeTab === "reports" 
+              ? "border-b-2 border-[#032B73] text-[#032B73]" 
+              : "border-transparent text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          <FileText className="h-4.5 w-4.5 text-blue-800" />
+          <span>Reports & Insights</span>
+        </button>
+
+        <button
           id="tab-fleet"
           onClick={() => setActiveTab("fleet")}
           className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
             activeTab === "fleet" 
-              ? "border-[#032B73] text-[#032B73]" 
+              ? "border-b-2 border-[#032B73] text-[#032B73]" 
               : "border-transparent text-gray-500 hover:text-gray-800"
           }`}
         >
-          <LayoutDashboard className="h-4.5 w-4.5" />
+          <Package className="h-4.5 w-4.5" />
           <span>Active Shipment Fleet ({filteredShipments.length})</span>
         </button>
 
@@ -1093,7 +540,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
           onClick={() => setActiveTab("add")}
           className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
             activeTab === "add" 
-              ? "border-[#032B73] text-[#032B73]" 
+              ? "border-b-2 border-[#032B73] text-[#032B73]" 
               : "border-transparent text-gray-500 hover:text-gray-800"
           }`}
         >
@@ -1109,7 +556,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
             !selectedShipment ? "opacity-40 cursor-not-allowed" : ""
           } ${
             activeTab === "update" 
-              ? "border-[#032B73] text-[#032B73]" 
+              ? "border-b-2 border-[#032B73] text-[#032B73]" 
               : "border-transparent text-gray-500 hover:text-gray-800"
           }`}
         >
@@ -1122,16 +569,71 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
           onClick={() => setActiveTab("backups")}
           className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
             activeTab === "backups" 
-              ? "border-[#032B73] text-[#032B73]" 
+              ? "border-b-2 border-[#032B73] text-[#032B73]" 
               : "border-transparent text-gray-500 hover:text-gray-800"
           }`}
         >
           <Database className="h-4.5 w-4.5" />
           <span>Server Backups & Security</span>
         </button>
+
+        <button
+          id="tab-settings"
+          onClick={() => setActiveTab("settings")}
+          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
+            activeTab === "settings" 
+              ? "border-b-2 border-[#032B73] text-[#032B73]" 
+              : "border-transparent text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          <Settings className="h-4.5 w-4.5" />
+          <span>Business Settings</span>
+        </button>
       </div>
 
       {/* Tab Panels */}
+      
+      {/* 0. Operations Dashboard Panel */}
+      {activeTab === "dashboard" && (
+        <div className="animate-[fadeIn_0.2s_ease-out]">
+          <OperationsDashboard 
+            shipments={shipments} 
+            loading={loading} 
+            onSelectShipment={(trackingNum) => {
+              const found = shipments.find(s => s.trackingNumber === trackingNum);
+              if (found) {
+                setSelectedShipment(found);
+                setMilestoneUpdate({
+                  milestoneIndex: found.currentMilestoneIndex,
+                  customDescription: MILESTONES[found.currentMilestoneIndex].description
+                });
+                setActiveTab("fleet");
+              }
+            }}
+          />
+        </div>
+      )}
+
+      {/* 0.5 Finance Ledger Panel */}
+      {activeTab === "finance" && (
+        <div className="animate-[fadeIn_0.2s_ease-out]">
+          <FinanceModule 
+            shipments={shipments}
+            loading={loading}
+            onUpdateShipmentDetails={updateShipmentDetails}
+          />
+        </div>
+      )}
+
+      {/* 0.75 Reports & Insights Panel */}
+      {activeTab === "reports" && (
+        <div className="animate-[fadeIn_0.2s_ease-out]">
+          <ReportsModule 
+            shipments={shipments}
+            loading={loading}
+          />
+        </div>
+      )}
       
       {/* 1. Fleet Panel */}
       {activeTab === "fleet" && (
@@ -1312,7 +814,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                               <button
                                 id={`btn-hold-${s.trackingNumber}`}
                                 title={s.isPaused ? "Resume Dispatch" : "Pause / Hold"}
-                                onClick={() => handlePauseToggle(s)}
+                                onClick={() => handlePauseToggleAction(s)}
                                 className={`p-1.5 rounded transition-all ${
                                   s.isPaused 
                                     ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-100" 
@@ -1326,7 +828,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                               <button
                                 id={`btn-delete-${s.trackingNumber}`}
                                 title="Delete Permanently"
-                                onClick={() => handleDeleteShipment(s.trackingNumber)}
+                                onClick={() => handleDeleteAction(s.trackingNumber)}
                                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1351,7 +853,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
 
           {/* Quick Edit Modal Layer (Conditional Overlap) */}
           {editingShipment && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-[fadeIn_0.2s_ease-out]">
               <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl max-w-2xl w-full overflow-hidden animate-[zoomIn_0.2s_ease-out]">
                 <div className="bg-[#032B73] text-white p-5 flex justify-between items-center border-b-4 border-[#FFD700]">
                   <h3 className="text-lg font-black tracking-tight">Edit Shipment Fields - {editingShipment.trackingNumber}</h3>
@@ -1363,7 +865,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                   </button>
                 </div>
 
-                <form onSubmit={handleUpdateCoreShipment} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <form onSubmit={handleUpdateCoreShipmentSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[11px] font-mono font-bold text-gray-400 block">SENDER/CONSIGNOR HUB</label>
@@ -1489,7 +991,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                     <button
                       type="submit"
                       disabled={actionLoading === "edit"}
-                      className="bg-[#032B73] text-[#FFD700] hover:bg-blue-900 px-5 py-2.5 rounded-lg text-xs font-black transition-all flex items-center space-x-2 shadow"
+                      className="bg-[#032B73] text-[#FFD700] hover:bg-blue-900 px-5 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center space-x-2 shadow text-center"
                     >
                       {actionLoading === "edit" ? <RefreshCw className="h-4.5 w-4.5 animate-spin" /> : <span>Apply Changes</span>}
                     </button>
@@ -1521,7 +1023,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
             </button>
           </div>
 
-          <form onSubmit={handleCreateShipment} className="p-6 space-y-6">
+          <form onSubmit={handleCreateShipmentSubmit} className="p-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               
               <div className="space-y-1.5">
@@ -1602,15 +1104,17 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[11px] font-mono font-bold text-gray-500 block uppercase">Origin Center</label>
-                <input
+                <label className="text-[11px] font-mono font-bold text-gray-500 block uppercase">Origin Center <span className="text-red-500">*</span></label>
+                <select
                   id="form-origin"
-                  type="text"
                   value={newShipment.originCountry}
                   onChange={(e) => setNewShipment({ ...newShipment, originCountry: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm font-semibold bg-gray-50"
-                  readOnly
-                />
+                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm font-semibold"
+                >
+                  {settings.countries.supportedOrigins.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1.5">
@@ -1621,9 +1125,9 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                   onChange={(e) => setNewShipment({ ...newShipment, destinationCountry: e.target.value })}
                   className="w-full border border-gray-200 rounded-lg p-2.5 text-sm font-semibold"
                 >
-                  <option value="United States">United States</option>
-                  <option value="United Kingdom">United Kingdom</option>
-                  <option value="Canada">Canada</option>
+                  {settings.countries.supportedDestinations.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
                 </select>
               </div>
 
@@ -1717,7 +1221,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                 id="btn-register-submit"
                 type="submit"
                 disabled={actionLoading === "create"}
-                className="bg-[#032B73] hover:bg-blue-900 text-[#FFD700] px-7 py-3 rounded-lg text-xs font-black transition-all flex items-center space-x-2 shadow"
+                className="bg-[#032B73] hover:bg-blue-900 text-[#FFD700] px-7 py-3 rounded-lg text-xs font-black transition-all flex items-center justify-center space-x-2 shadow text-center"
               >
                 {actionLoading === "create" ? (
                   <RefreshCw className="h-4.5 w-4.5 animate-spin" />
@@ -1733,142 +1237,19 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
         </div>
       )}
 
-      {/* 3. Milestone Controller Panel */}
-      {activeTab === "update" && selectedShipment && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6 animate-[fadeIn_0.2s_ease-out]">
-          
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-4 gap-4">
-            <div>
-              <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-800 px-2.5 py-1 rounded border border-blue-100">
-                STAGE ADVANCEMENT WORKSPACE
-              </span>
-              <h3 className="text-base font-bold text-[#032B73] mt-1">
-                Milestone Status Control: <span className="font-mono">{selectedShipment.trackingNumber}</span>
-              </h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Consignee: <strong className="text-gray-700">{selectedShipment.receiverName}</strong> ({selectedShipment.destinationCountry}{selectedShipment.portGateway ? ` - ${selectedShipment.portGateway}` : ""})
-              </p>
-            </div>
-
-            <div className="text-right">
-              <span className="text-[10px] text-gray-400 font-mono block">CURRENT STATUS STAGE</span>
-              <span className="inline-flex bg-blue-100 text-blue-800 text-xs font-black px-3 py-1.5 rounded-full mt-1">
-                Stage {selectedShipment.currentMilestoneIndex + 1}: {MILESTONES[selectedShipment.currentMilestoneIndex].name}
-              </span>
-            </div>
-          </div>
-
-          <form onSubmit={handleUpdateMilestone} className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            {/* Left: Predefined milestone selectors */}
-            <div className="md:col-span-1 space-y-1.5">
-              <label className="text-[11px] font-mono font-bold text-gray-500 block uppercase">
-                Select Transit Milestone (1 to {MILESTONES.length})
-              </label>
-              
-              <div className="border border-gray-200 rounded-lg max-h-[350px] overflow-y-auto divide-y divide-gray-100 shadow-inner">
-                {MILESTONES.map((mil, mIdx) => {
-                  const isCur = mIdx === milestoneUpdate.milestoneIndex;
-                  const isPast = mIdx <= selectedShipment.currentMilestoneIndex;
-                  return (
-                    <button
-                      id={`select-milestone-${mIdx}`}
-                      key={mIdx}
-                      type="button"
-                      onClick={() => setMilestoneUpdate({
-                        milestoneIndex: mIdx,
-                        customDescription: MILESTONES[mIdx].description
-                      })}
-                      className={`w-full text-left p-2.5 text-xs font-semibold flex items-center justify-between transition-colors ${
-                        isCur 
-                          ? "bg-[#032B73] text-white" 
-                          : isPast 
-                            ? "bg-blue-50/50 text-blue-900 hover:bg-blue-50" 
-                            : "bg-white text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono text-[10px] opacity-60">{(mIdx + 1).toString().padStart(2, '0')}.</span>
-                        <span className="truncate">{mil.name}</span>
-                      </div>
-                      
-                      {isPast && !isCur && (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Right: Milestone notes and submit (2 cols on desktop) */}
-            <div className="md:col-span-2 space-y-4 flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                  <h4 className="text-xs font-bold text-blue-900 mb-1 font-mono uppercase">
-                    ADVANCING TO STAGE {milestoneUpdate.milestoneIndex + 1}: {MILESTONES[milestoneUpdate.milestoneIndex].name}
-                  </h4>
-                  <p className="text-xs text-blue-700 leading-normal">
-                    This selection advances the customer timeline. It generates simulated dispatch security email to <strong>shipplixservices@gmail.com</strong> and WhatsApp API updates to the consignee phone contact.
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-baseline">
-                    <label className="text-[11px] font-mono font-bold text-gray-500 block uppercase">
-                      Custom Transit Stage Description
-                    </label>
-                    <button
-                      id="btn-reset-descr"
-                      type="button"
-                      onClick={() => setMilestoneUpdate({
-                        ...milestoneUpdate,
-                        customDescription: MILESTONES[milestoneUpdate.milestoneIndex].description
-                      })}
-                      className="text-blue-700 hover:underline text-[10px] font-bold"
-                    >
-                      Reset to Default Template
-                    </button>
-                  </div>
-                  <textarea
-                    id="textarea-custom-desc"
-                    rows={4}
-                    value={milestoneUpdate.customDescription}
-                    onChange={(e) => setMilestoneUpdate({ ...milestoneUpdate, customDescription: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg p-2.5 text-xs sm:text-sm"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("fleet")}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 rounded-lg text-xs font-bold transition-all"
-                >
-                  Return to Fleet
-                </button>
-                <button
-                  id="btn-update-stage"
-                  type="submit"
-                  disabled={actionLoading === "milestone"}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 rounded-lg text-xs font-black transition-all flex items-center space-x-2 shadow-md"
-                >
-                  {actionLoading === "milestone" ? (
-                    <RefreshCw className="h-4.5 w-4.5 animate-spin" />
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4" />
-                      <span>Dispatch Status Update</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-          </form>
-        </div>
+      {/* 3. Milestone & Shipment Management Hub */}
+      {activeTab === "update" && activeShipment && (
+        <ShipmentManagementHub
+          shipment={activeShipment}
+          actionLoading={actionLoading}
+          onUpdateMilestone={updateMilestone}
+          onUpdateStatusAndHealth={updateStatusAndHealth}
+          onAddInternalNote={addInternalNote}
+          onUploadDocument={uploadDocument}
+          onAddPaymentTransaction={addPaymentTransaction}
+          onReturnToFleet={() => setActiveTab("fleet")}
+          adminEmail={adminUser?.email || "admin@shipplix.com"}
+        />
       )}
 
       {/* 4. Security & Backups Panel */}
@@ -1894,9 +1275,9 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
 
               <button
                 id="btn-trigger-backup-now"
-                onClick={handleTriggerBackup}
+                onClick={triggerBackup}
                 disabled={actionLoading === "backup"}
-                className="bg-[#032B73] hover:bg-blue-900 text-[#FFD700] font-black text-xs px-4 py-2.5 rounded-lg transition-all flex items-center space-x-1.5 shadow"
+                className="bg-[#032B73] hover:bg-blue-900 text-[#FFD700] font-black text-xs px-4 py-2.5 rounded-lg transition-all flex items-center justify-center space-x-1.5 shadow text-center"
               >
                 {actionLoading === "backup" ? <RefreshCw className="h-4 w-4 animate-spin" /> : <span>Execute Snapshot Backup</span>}
               </button>
@@ -1948,6 +1329,15 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* 4. Business Settings Panel */}
+      {activeTab === "settings" && (
+        <div className="animate-[fadeIn_0.2s_ease-out]">
+          <SettingsModule 
+            showSystemMessage={showSystemMessage}
+          />
         </div>
       )}
 

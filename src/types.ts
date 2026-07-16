@@ -14,6 +14,45 @@ export interface NotificationEntry {
   status: 'sent' | 'pending' | 'failed';
 }
 
+export interface InternalNote {
+  id: string;
+  text: string;
+  timestamp: string; // ISO string
+  author: string;
+}
+
+export interface ShipmentDocument {
+  id: string;
+  name: string;
+  type: 'invoice' | 'receipt' | 'image' | 'attachment';
+  url: string; // Base64 content or relative mock path
+  uploadedAt: string; // ISO string
+  size?: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  amount: number;
+  date: string; // YYYY-MM-DD
+  method: string;
+  reference: string;
+}
+
+export interface PaymentHistory {
+  status: 'paid' | 'pending' | 'partially_paid';
+  amountDue: number;
+  amountPaid: number;
+  transactions: PaymentTransaction[];
+}
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  timestamp: string; // ISO string
+  details?: string;
+  author?: string;
+}
+
 export interface Shipment {
   trackingNumber: string; // SPX-YYYYMMDD-XXXX
   referenceNumber: string;
@@ -33,6 +72,13 @@ export interface Shipment {
   notifications: NotificationEntry[];
   isPaused: boolean;
   portGateway?: string;
+  // Enriched feature additions
+  shipmentHealth?: 'optimal' | 'delayed' | 'action_required' | 'critical';
+  delayStatus?: string;
+  internalNotes?: InternalNote[];
+  documents?: ShipmentDocument[];
+  paymentHistory?: PaymentHistory;
+  auditLogs?: AuditLogEntry[];
 }
 
 export interface DashboardStats {
