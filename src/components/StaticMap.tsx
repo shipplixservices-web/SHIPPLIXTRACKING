@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { Plane, MapPin, Compass, Navigation } from "lucide-react";
 import { Shipment, MILESTONES } from "../types.js";
-import THEME from "../utils/theme.ts";
 
 interface StaticMapProps {
   shipment: Shipment;
@@ -189,7 +188,7 @@ export default function StaticMap({ shipment }: StaticMapProps) {
             <Compass className="h-5 w-5 animate-[spin_10s_linear_infinite]" />
           </div>
           <div>
-            <h4 className="text-sm font-black tracking-wide uppercase text-brand-yellow">
+            <h4 className="text-sm font-black tracking-wide uppercase text-[#FFD700]">
               
             </h4>
             <p className="text-[10px] text-slate-400 font-mono">
@@ -284,7 +283,7 @@ export default function StaticMap({ shipment }: StaticMapProps) {
             <path
               d={arcPathData.pathString}
               fill="none"
-              stroke={THEME.yellow}
+              stroke="#FFD700"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeDasharray="1000"
@@ -306,8 +305,8 @@ export default function StaticMap({ shipment }: StaticMapProps) {
 
           {/* Origin Node - Lagos Hub */}
           <g transform={`translate(${origin.x}, ${origin.y})`} className="cursor-pointer group">
-            <circle r="16" fill={THEME.blue} opacity="0.35" className="animate-ping" />
-            <circle r="8" fill={THEME.blue} stroke={THEME.yellow} strokeWidth="2" />
+            <circle r="16" fill="#032B73" opacity="0.35" className="animate-ping" />
+            <circle r="8" fill="#032B73" stroke="#FFD700" strokeWidth="2" />
             <circle r="3.5" fill="#ffffff" />
             
             {/* Label box */}
@@ -321,14 +320,14 @@ export default function StaticMap({ shipment }: StaticMapProps) {
 
           {/* Destination Node */}
           <g transform={`translate(${destination.x}, ${destination.y})`} className="cursor-pointer">
-            <circle r="16" fill={THEME.yellow} opacity="0.25" className="animate-ping" />
-            <circle r="8" fill={THEME.yellow} stroke={THEME.blue} strokeWidth="2" />
-            <circle r="3.5" fill={THEME.blue} />
+            <circle r="16" fill="#FFD700" opacity="0.25" className="animate-ping" />
+            <circle r="8" fill="#FFD700" stroke="#032B73" strokeWidth="2" />
+            <circle r="3.5" fill="#032B73" />
             
             {/* Label box */}
             <g transform="translate(0, -22)">
-              <rect x="-55" y="-12" width="110" height="20" rx="4" fill="#0f172a" stroke={THEME.yellow} strokeWidth="1" opacity="0.9" />
-              <text textAnchor="middle" y="2" fill={THEME.yellow} fontSize="9" fontWeight="extrabold" fontFamily="monospace">
+              <rect x="-55" y="-12" width="110" height="20" rx="4" fill="#0f172a" stroke="#FFD700" strokeWidth="1" opacity="0.9" />
+              <text textAnchor="middle" y="2" fill="#FFD700" fontSize="9" fontWeight="extrabold" fontFamily="monospace">
                 {destination.code}: {destination.city.toUpperCase()}
               </text>
             </g>
@@ -340,13 +339,13 @@ export default function StaticMap({ shipment }: StaticMapProps) {
             className="transition-transform duration-700 ease-out"
           >
             {/* Glowing Tracker Halo */}
-            <circle r="22" fill={isPaused ? "#ef4444" : THEME.yellow} opacity="0.2" className="animate-pulse" />
-            <circle r="11" fill={isPaused ? "#7f1d1d" : THEME.blue} stroke={isPaused ? "#f87171" : THEME.yellow} strokeWidth="1.5" />
+            <circle r="22" fill={isPaused ? "#ef4444" : "#FFD700"} opacity="0.2" className="animate-pulse" />
+            <circle r="11" fill={isPaused ? "#7f1d1d" : "#032B73"} stroke={isPaused ? "#f87171" : "#FFD700"} strokeWidth="1.5" />
             
             {/* Plane icon SVG */}
             <path
               d="M14 11.5l-4-3V4.5C10 3.67 9.33 3 8.5 3S7 3.67 7 4.5v4l-4 3v1.5l4-1.25V14l-1.5 1.25V17l3-1 3 1v-1.75L10 14v-2.25l4 1.25v-1.5z"
-              fill={isPaused ? "#f87171" : THEME.yellow}
+              fill={isPaused ? "#f87171" : "#FFD700"}
               transform="scale(1.2) translate(-8.5, -9)"
             />
           </g>
@@ -355,8 +354,8 @@ export default function StaticMap({ shipment }: StaticMapProps) {
         {/* Floating Telemetry Coordinates Overlay */}
         <div className="absolute bottom-4 left-4 bg-slate-900/85 backdrop-blur-xs border border-slate-800 rounded-lg p-3 font-mono text-[10px] space-y-1 z-10 shadow-lg">
           <div className="flex items-center space-x-2 text-slate-400">
-            <Navigation className="h-3.5 w-3.5 text-brand-yellow shrink-0" />
-            <span className="font-bold text-brand-yellow uppercase tracking-wider">CARGO POSITION RADAR</span>
+            <Navigation className="h-3.5 w-3.5 text-[#FFD700] shrink-0" />
+            <span className="font-bold text-[#FFD700] uppercase tracking-wider">CARGO POSITION RADAR</span>
           </div>
           <div className="grid grid-cols-2 gap-x-4 text-slate-300">
             <div>LAT: <span className="text-white font-bold">{currentCoords.lat}</span></div>
@@ -369,11 +368,11 @@ export default function StaticMap({ shipment }: StaticMapProps) {
         {/* Map Legend Overlay */}
         <div className="absolute bottom-4 right-4 bg-slate-900/85 backdrop-blur-xs border border-slate-800 rounded-lg p-3 font-mono text-[9px] space-y-1.5 z-10 shadow-lg">
           <div className="flex items-center space-x-1.5 text-slate-300">
-            <span className="h-1.5 w-3 bg-brand-yellow inline-block rounded-xs" />
+            <span className="h-1.5 w-3 bg-[#FFD700] inline-block rounded-xs" />
             <span>Active Flight Arc</span>
           </div>
           <div className="flex items-center space-x-1.5 text-slate-300">
-            <span className="h-1.5 w-3 bg-brand-blue/50 inline-block rounded-xs" />
+            <span className="h-1.5 w-3 bg-[#1e3a8a] inline-block rounded-xs" />
             <span>Staged Flight Range</span>
           </div>
           <div className="flex items-center space-x-1.5 text-slate-300">
@@ -401,12 +400,12 @@ export default function StaticMap({ shipment }: StaticMapProps) {
         </div>
 
         <div className="flex items-start space-x-3.5 border-t md:border-t-0 md:border-l border-slate-800 pt-3 md:pt-0 md:pl-4">
-          <div className="p-1.5 bg-yellow-500/10 rounded border border-yellow-500/20 text-brand-yellow shrink-0">
+          <div className="p-1.5 bg-yellow-500/10 rounded border border-yellow-500/20 text-[#FFD700] shrink-0">
             <Plane className="h-4 w-4" />
           </div>
           <div>
             <span className="text-slate-500 text-[8px] block uppercase">Final Delivery Terminal</span>
-            <span className="text-brand-yellow font-black text-xs">{destination.city} ({destination.code})</span>
+            <span className="text-[#FFD700] font-black text-xs">{destination.city} ({destination.code})</span>
             <span className="text-slate-300 text-[10px] block font-semibold">{destination.airport}</span>
             <span className="text-slate-400 text-[10px] block mt-0.5 font-mono">{destination.lat} • {destination.lng}</span>
           </div>

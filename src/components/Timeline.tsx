@@ -39,7 +39,7 @@ export default function Timeline({ currentMilestoneIndex, milestoneHistory, isPa
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
       <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
         <div>
-          <h3 className="text-lg font-bold text-brand-blue">Shipment Timeline</h3>
+          <h3 className="text-lg font-bold text-[#032B73]">Shipment Timeline</h3>
           <p className="text-xs text-gray-500">
             {isPaused ? "Tracking paused by administration" : "Real-time updates directly from flight hubs"}
           </p>

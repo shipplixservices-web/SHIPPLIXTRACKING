@@ -1,238 +1,451 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Shield, Key, LayoutDashboard, Plus, Eye, Edit2, Trash2, Pause, Play, Download, Search, 
-  MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, CheckCircle2, Sliders, Database, Save, LogOut, Receipt,
-  FileText, Settings, Bell, AlertTriangle, UserPlus, DollarSign, ShieldAlert, CheckCircle, Info, Clock, ExternalLink, X, History
+  MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, CheckCircle2, Sliders, Database, Save, LogOut
 } from "lucide-react";
-import { Shipment, MILESTONES, AdminNotification } from "../types.js";
+import { Shipment, MILESTONES, DashboardStats } from "../types.js";
 import ShipplixLogo from "./ShipplixLogo.tsx";
-import { authService, AdminUser } from "../services/authService.ts";
-import { shipmentService } from "../services/shipmentService.ts";
-import { useShipments } from "../hooks/useShipments.ts";
-import { exportShipmentsToCSV } from "../utils/csvUtils.ts";
-import OperationsDashboard from "./OperationsDashboard.tsx";
-import FinanceModule from "./FinanceModule.tsx";
-import ReportsModule from "./ReportsModule.tsx";
-import SettingsModule from "./SettingsModule.tsx";
-import { getAppSettings } from "../utils/settingsUtils.ts";
-import { ShipmentManagementHub } from "./ShipmentManagementHub.tsx";
-import AuditLogModule from "./AuditLogModule.tsx";
+import { supabase, mapDbShipmentToShipment } from "../supabaseClient.js";
 
 interface AdminPanelProps {
   onTrackingRequest: (trackingNumber: string) => void;
 }
 
+function getSeedShipments(): Shipment[] {
+  const now = new Date("2026-06-27T01:27:36-07:00");
+  
+  const formatDate = (daysAgo: number, timeStr: string) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - daysAgo);
+    return `${d.toISOString().split('T')[0]}T${timeStr}`;
+  };
+
+  return [
+    {
+      trackingNumber: "SPX-20260625-5522",
+      referenceNumber: "REF-90823485",
+      senderName: "Mrs. Adebayo (Fashion Vendor)",
+      receiverName: "Sarah Jenkins",
+      phoneNumber: "+1 (415) 555-2671",
+      originCountry: "Nigeria",
+      destinationCountry: "United States",
+      weight: 45.2,
+      numberOfPackages: 3,
+      serviceType: "Express",
+      bookingDate: "2026-06-24",
+      expectedDeliveryDate: "2026-06-29",
+      shipmentNotes: "High-value African fabrics, hand-crafted designer Ankara gowns. Keep dry.",
+      currentMilestoneIndex: 6, // Customs Review
+      isPaused: false,
+      milestoneHistory: [
+        {
+          milestoneIndex: 0,
+          milestoneName: MILESTONES[0].name,
+          description: MILESTONES[0].description,
+          timestamp: formatDate(3, "10:42:00")
+        },
+        {
+          milestoneIndex: 2,
+          milestoneName: MILESTONES[2].name,
+          description: MILESTONES[2].description,
+          timestamp: formatDate(3, "14:15:00")
+        },
+        {
+          milestoneIndex: 3,
+          milestoneName: MILESTONES[3].name,
+          description: MILESTONES[3].description,
+          timestamp: formatDate(2, "09:30:00")
+        },
+        {
+          milestoneIndex: 5,
+          milestoneName: MILESTONES[5].name,
+          description: MILESTONES[5].description,
+          timestamp: formatDate(2, "16:45:00")
+        },
+        {
+          milestoneIndex: 6,
+          milestoneName: MILESTONES[6].name,
+          description: MILESTONES[6].description,
+          timestamp: formatDate(1, "11:20:00")
+        }
+      ],
+      notifications: [
+        {
+          id: "notif-1",
+          timestamp: formatDate(3, "10:42:00"),
+          type: "email",
+          recipient: "shipplixservices@gmail.com",
+          milestoneName: "Shipment Received",
+          status: "sent"
+        },
+        {
+          id: "notif-2",
+          timestamp: formatDate(2, "16:45:00"),
+          type: "email",
+          recipient: "shipplixservices@gmail.com",
+          milestoneName: "Regulatory Inspection",
+          status: "sent"
+        },
+        {
+          id: "notif-3",
+          timestamp: formatDate(1, "11:20:00"),
+          type: "whatsapp",
+          recipient: "+1 (415) 555-2671",
+          milestoneName: "Customs Review",
+          status: "sent"
+        }
+      ]
+    },
+    {
+      trackingNumber: "SPX-20260620-1080",
+      referenceNumber: "REF-29103847",
+      senderName: "Emeka O. (Wholesaler)",
+      receiverName: "Richard Sterling",
+      phoneNumber: "+44 7911 123456",
+      originCountry: "Nigeria",
+      destinationCountry: "United Kingdom",
+      weight: 120.5,
+      numberOfPackages: 8,
+      serviceType: "Standard",
+      bookingDate: "2026-06-20",
+      expectedDeliveryDate: "2026-06-26",
+      shipmentNotes: "Bulk food items (Garri, Yam flour, Egusi, Spices) for distribution.",
+      currentMilestoneIndex: 23, // Delivered
+      isPaused: false,
+      milestoneHistory: Array.from({ length: 24 }, (_, i) => {
+        const daysAgo = 6 - Math.floor(i * 0.25);
+        const hour = 9 + (i % 8);
+        return {
+          milestoneIndex: i,
+          milestoneName: MILESTONES[i].name,
+          description: MILESTONES[i].description,
+          timestamp: formatDate(daysAgo, `${hour.toString().padStart(2, '0')}:15:00`)
+        };
+      }),
+      notifications: [
+        {
+          id: "notif-delivered-email",
+          timestamp: formatDate(1, "15:30:00"),
+          type: "email",
+          recipient: "shipplixservices@gmail.com",
+          milestoneName: "Delivered",
+          status: "sent"
+        }
+      ]
+    },
+    {
+      trackingNumber: "SPX-20260626-3120",
+      referenceNumber: "REF-74839210",
+      senderName: "Ngozi A. (Retailer)",
+      receiverName: "Amina Yusuf",
+      phoneNumber: "+1 (647) 555-8392",
+      originCountry: "Nigeria",
+      destinationCountry: "Canada",
+      weight: 12.8,
+      numberOfPackages: 1,
+      serviceType: "Economy",
+      bookingDate: "2026-06-26",
+      expectedDeliveryDate: "2026-07-06",
+      shipmentNotes: "Organic cosmetics and hair care oils.",
+      currentMilestoneIndex: 2, // Shipment Verified
+      isPaused: false,
+      milestoneHistory: [
+        {
+          milestoneIndex: 0,
+          milestoneName: MILESTONES[0].name,
+          description: MILESTONES[0].description,
+          timestamp: formatDate(1, "08:15:00")
+        },
+        {
+          milestoneIndex: 2,
+          milestoneName: MILESTONES[2].name,
+          description: MILESTONES[2].description,
+          timestamp: formatDate(0, "15:30:00")
+        }
+      ],
+      notifications: []
+    },
+    {
+      trackingNumber: "SPX-20260623-2990",
+      referenceNumber: "REF-43928104",
+      senderName: "Chinonso Uzor",
+      receiverName: "Michael Chang",
+      phoneNumber: "+1 (212) 555-0199",
+      originCountry: "Nigeria",
+      destinationCountry: "United States",
+      weight: 18.0,
+      numberOfPackages: 2,
+      serviceType: "Express",
+      bookingDate: "2026-06-23",
+      expectedDeliveryDate: "2026-06-27",
+      shipmentNotes: "Hand-carved wooden sculptures and art exhibits.",
+      currentMilestoneIndex: 22, // Out for Delivery
+      isPaused: false,
+      milestoneHistory: Array.from({ length: 23 }, (_, i) => {
+        const daysAgo = 4 - Math.floor(i * 0.18);
+        const hour = 8 + (i % 9);
+        return {
+          milestoneIndex: i,
+          milestoneName: MILESTONES[i].name,
+          description: MILESTONES[i].description,
+          timestamp: formatDate(daysAgo, `${hour.toString().padStart(2, '0')}:45:00`)
+        };
+      }),
+      notifications: []
+    }
+  ];
+}
+
 export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
-  // Authentication states
+  // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+  const [adminUser, setAdminUser] = useState<{ email: string; name: string } | null>(null);
 
-  // Check initial local session on mount
-  useEffect(() => {
-    const session = authService.getLocalSession();
-    if (session) {
-      setAdminUser(session);
-      setIsAuthenticated(true);
-    }
-  }, []);
+  // Dashboard Data state
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalShipments: 0,
+    deliveredShipments: 0,
+    inTransit: 0,
+    pendingVerification: 0,
+    todayBookings: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [systemMessage, setSystemMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  // Use the modular shipment dashboard hook
-  const {
-    shipments,
-    loading,
-    actionLoading,
-    systemMessage,
-    stats,
-    searchQuery,
-    setSearchQuery,
-    filterDestination,
-    setFilterDestination,
-    filterService,
-    setFilterService,
-    filterStatus,
-    setFilterStatus,
-    filteredShipments,
-    indexedShipments,
-    uniqueDestinations,
-    registerShipment,
-    updateShipmentDetails,
-    updateMilestone,
-    deleteShipment,
-    togglePauseStatus,
-    triggerBackup,
-    showSystemMessage,
-    updateStatusAndHealth,
-    addInternalNote,
-    uploadDocument,
-    addPaymentTransaction
-  } = useShipments(isAuthenticated);
+  // Navigation state inside Admin
+  const [activeTab, setActiveTab] = useState<"fleet" | "add" | "update" | "backups">("fleet");
 
-  // Component local states for UI Navigation & Forms
-  const [activeTab, setActiveTab] = useState<"dashboard" | "finance" | "reports" | "fleet" | "add" | "update" | "backups" | "settings" | "notifications" | "audit">("dashboard");
+  // Selection states
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
-  const [editingShipment, setEditingShipment] = useState<Shipment | null>(null);
 
-  // Admin Notification Center States
-  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
-  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
-  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
-  const [notificationFilter, setNotificationFilter] = useState<string>("all");
-  const [notificationSearch, setNotificationSearch] = useState<string>("");
+  // Filter & Search states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterDestination, setFilterDestination] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterService, setFilterService] = useState("");
 
-  const filteredNotifications = useMemo(() => {
-    let list = [...notifications];
-    
-    // Filter by Type
-    if (notificationFilter !== "all") {
-      list = list.filter(n => n.type === notificationFilter);
-    }
-    
-    // Search
-    const search = notificationSearch.trim().toLowerCase();
-    if (search) {
-      list = list.filter(n => 
-        n.title.toLowerCase().includes(search) || 
-        n.message.toLowerCase().includes(search) ||
-        (n.meta?.trackingNumber && n.meta.trackingNumber.toLowerCase().includes(search))
-      );
-    }
-    
-    return list;
-  }, [notifications, notificationFilter, notificationSearch]);
-
-  const fetchAdminNotifications = async () => {
-    try {
-      const data = await shipmentService.fetchNotifications();
-      setNotifications(data);
-      setUnreadNotificationsCount(data.filter((n: any) => !n.read).length);
-    } catch (err) {
-      console.error("Failed to fetch admin notifications:", err);
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchAdminNotifications();
-      const interval = setInterval(fetchAdminNotifications, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated]);
-
-  // Global Command Search States
-  const [globalSearchQuery, setGlobalSearchQuery] = useState("");
-  const globalSearchResults = useMemo(() => {
-    const q = globalSearchQuery.trim().toLowerCase();
-    if (!q) return [];
-    return indexedShipments
-      .filter(item => item.searchString.includes(q))
-      .map(item => ({
-        shipment: item.shipment,
-        matchedFields: item.searchString
-      }));
-  }, [indexedShipments, globalSearchQuery]);
-
-  // Load settings
-  const settings = getAppSettings();
-
+  // Create Shipment form state
   const [newShipment, setNewShipment] = useState({
     trackingNumber: "",
     referenceNumber: "",
     senderName: "",
     receiverName: "",
     phoneNumber: "",
-    originCountry: settings.countries.supportedOrigins[0] || "Nigeria",
-    destinationCountry: settings.countries.supportedDestinations[0] || "United States",
+    originCountry: "Nigeria",
+    destinationCountry: "United States",
     weight: "10.0",
     numberOfPackages: "1",
-    serviceType: "Express" as const,
+    serviceType: "Express" as "Express" | "Standard" | "Economy",
     bookingDate: new Date().toISOString().split('T')[0],
     expectedDeliveryDate: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
     shipmentNotes: "",
     portGateway: ""
   });
 
+  // Edit Shipment state (when editing core fields)
+  const [editingShipment, setEditingShipment] = useState<Shipment | null>(null);
+
+  // Milestone Update state
   const [milestoneUpdate, setMilestoneUpdate] = useState({
     milestoneIndex: 0,
     customDescription: ""
   });
 
-  // Dynamic visual theme listener
+  // Generate a random tracking number
+  const handleGenerateTracking = () => {
+    setNewShipment(prev => {
+      const dateStr = (prev.bookingDate || new Date().toISOString().split('T')[0]).replace(/-/g, "");
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      return {
+        ...prev,
+        trackingNumber: `SPX-${dateStr}-${randomNum}`
+      };
+    });
+  };
+
   useEffect(() => {
-    const applyTheme = () => {
-      const activeSettings = getAppSettings();
-      const theme = activeSettings.theme.themeName;
-      let primaryColor = "#032B73";
-      let primaryHover = "#1e40af";
-      let secondaryColor = "#ffd700";
-
-      if (theme === "Cosmic Indigo") {
-        primaryColor = "#4F46E5";
-        primaryHover = "#4338ca";
-        secondaryColor = "#c084fc";
-      } else if (theme === "Teal Forest") {
-        primaryColor = "#0D9488";
-        primaryHover = "#0f766e";
-        secondaryColor = "#34d399";
+    // Check local storage and Supabase session for pre-existing session
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user) {
+        setIsAuthenticated(true);
+        setAdminUser({
+          email: session.user.email || "",
+          name: "Shipplix Operations Admin"
+        });
+      } else {
+        const savedSession = localStorage.getItem("shipplix_admin_session");
+        if (savedSession) {
+          try {
+            const parsed = JSON.parse(savedSession);
+            setIsAuthenticated(true);
+            setAdminUser(parsed.user);
+          } catch {
+            localStorage.removeItem("shipplix_admin_session");
+          }
+        }
       }
-
-      let styleEl = document.getElementById("shipplix-theme-overrides");
-      if (!styleEl) {
-        styleEl = document.createElement("style");
-        styleEl.id = "shipplix-theme-overrides";
-        document.head.appendChild(styleEl);
-      }
-      styleEl.innerHTML = `
-        /* Dynamic Theme overrides */
-        .text-\\[\\#032B73\\] { color: ${primaryColor} !important; }
-        .bg-\\[\\#032B73\\] { background-color: ${primaryColor} !important; }
-        .hover\\:bg-blue-900:hover { background-color: ${primaryHover} !important; }
-        .border-\\[\\#032B73\\] { border-color: ${primaryColor} !important; }
-        .focus\\:ring-\\[\\#032B73\\]:focus { --tw-ring-color: ${primaryColor} !important; }
-        .focus\\:ring-2:focus { --tw-ring-color: ${primaryColor} !important; }
-        .text-\\[\\#FFD700\\] { color: ${secondaryColor} !important; }
-        .border-b-2.border-\\[\\#032B73\\] { border-color: ${primaryColor} !important; text-color: ${primaryColor} !important; }
-      `;
     };
-
-    applyTheme();
-    window.addEventListener("shipplixSettingsChanged", applyTheme);
-    return () => {
-      window.removeEventListener("shipplixSettingsChanged", applyTheme);
-    };
+    checkSession();
   }, []);
 
-  // Automatically select first shipment as default selected to match old behavior
   useEffect(() => {
-    if (shipments.length > 0 && !selectedShipment) {
-      setSelectedShipment(shipments[0]);
-      setMilestoneUpdate({
-        milestoneIndex: shipments[0].currentMilestoneIndex,
-        customDescription: MILESTONES[shipments[0].currentMilestoneIndex].description
-      });
+    if (isAuthenticated) {
+      fetchDashboardData();
     }
-  }, [shipments, selectedShipment]);
+  }, [isAuthenticated]);
 
-  // Find matching active shipment from fleet array to prevent stale local selection state
-  const activeShipment = selectedShipment 
-    ? shipments.find(s => s.trackingNumber.toUpperCase() === selectedShipment.trackingNumber.toUpperCase()) || selectedShipment 
-    : null;
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      // Query directly from Supabase
+      const { data: dbShipments, error: shipmentsError } = await supabase
+        .from("shipments")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-  // Auth Handlers using the AuthService
+      if (shipmentsError) {
+        throw shipmentsError;
+      }
+
+      let mappedShipments = (dbShipments || []).map(mapDbShipmentToShipment);
+
+      // If database is empty, auto-seed it!
+      if (mappedShipments.length === 0) {
+        console.log("Database is empty. Seeding mock shipments...");
+        const seedShipments = getSeedShipments();
+        
+        const dbSeeds = seedShipments.map(s => ({
+          tracking_number: s.trackingNumber,
+          reference_number: s.referenceNumber,
+          sender_name: s.senderName,
+          receiver_name: s.receiverName,
+          phone_number: s.phoneNumber,
+          origin_country: s.originCountry,
+          destination_country: s.destinationCountry,
+          weight: s.weight,
+          number_of_packages: s.numberOfPackages,
+          service_type: s.serviceType,
+          booking_date: s.bookingDate,
+          expected_delivery_date: s.expectedDeliveryDate,
+          shipment_notes: s.shipmentNotes,
+          current_milestone_index: s.currentMilestoneIndex,
+          milestone_history: s.milestoneHistory,
+          notifications: s.notifications,
+          is_paused: s.isPaused,
+          port_gateway: s.portGateway || ""
+        }));
+
+        const { data: seededData, error: seedError } = await supabase
+          .from("shipments")
+          .insert(dbSeeds)
+          .select();
+
+        if (seedError) {
+          console.error("Error seeding shipments:", seedError);
+        } else if (seededData) {
+          mappedShipments = seededData.map(mapDbShipmentToShipment);
+          console.log("Seeding successful! Seeded rows:", mappedShipments.length);
+          
+          // Seed the shipment_events table too for normalization!
+          const dbEvents = [];
+          for (const s of seededData) {
+            const milestoneHistory = s.milestone_history || [];
+            for (const h of milestoneHistory) {
+              dbEvents.push({
+                shipment_id: s.id,
+                tracking_number: s.tracking_number,
+                milestone_index: h.milestoneIndex,
+                milestone_name: h.milestoneName,
+                description: h.description,
+                timestamp: h.timestamp
+              });
+            }
+          }
+          if (dbEvents.length > 0) {
+            await supabase.from("shipment_events").insert(dbEvents);
+          }
+        }
+      }
+
+      setShipments(mappedShipments);
+
+      if (mappedShipments.length > 0 && !selectedShipment) {
+        setSelectedShipment(mappedShipments[0]);
+        setMilestoneUpdate({
+          milestoneIndex: mappedShipments[0].currentMilestoneIndex,
+          customDescription: MILESTONES[mappedShipments[0].currentMilestoneIndex].description
+        });
+      }
+
+      // Calculate stats directly in the frontend
+      const totalShipments = mappedShipments.length;
+      const deliveredShipments = mappedShipments.filter(s => s.currentMilestoneIndex === 23).length; // Delivered index is 23
+      const pendingVerification = mappedShipments.filter(s => s.currentMilestoneIndex === 0).length;
+      const inTransit = mappedShipments.filter(s => s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 23).length;
+      
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayBookings = mappedShipments.filter(s => s.bookingDate === todayStr).length;
+
+      setStats({
+        totalShipments,
+        deliveredShipments,
+        inTransit,
+        pendingVerification,
+        todayBookings
+      });
+
+    } catch (err: any) {
+      console.error("Error fetching dashboard data", err);
+      showSystemMessage("error", `Unable to load dashboard fleet: ${err.message || err}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showSystemMessage = (type: 'success' | 'error', text: string) => {
+    setSystemMessage({ type, text });
+    setTimeout(() => {
+      setSystemMessage(null);
+    }, 5000);
+  };
+
+  // Auth handler using Supabase Auth
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
     setAuthLoading(true);
 
     try {
-      const user = await authService.login(email, password);
-      setAdminUser(user);
-      setIsAuthenticated(true);
-    } catch (err: any) {
-      setAuthError(err.message || "Failed to authenticate. Connection error.");
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        setAuthError(error.message);
+      } else if (data && data.user) {
+        setIsAuthenticated(true);
+        const adminData = {
+          email: data.user.email || "",
+          name: "Shipplix Operations Admin"
+        };
+        setAdminUser(adminData);
+        localStorage.setItem("shipplix_admin_session", JSON.stringify({
+          success: true,
+          user: adminData
+        }));
+      } else {
+        setAuthError("Failed to authenticate. Invalid administrator credentials.");
+      }
+    } catch (err) {
+      setAuthError("Failed to authenticate. Connection error.");
     } finally {
       setAuthLoading(false);
     }
@@ -241,47 +454,122 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
   const handleLogout = async () => {
     setIsAuthenticated(false);
     setAdminUser(null);
-    setSelectedShipment(null);
-    await authService.logout();
-  };
-
-  // Generate unique ID in the form matching the old action
-  const handleGenerateTracking = () => {
-    const today = new Date();
-    const dateStr = today.toISOString().split('T')[0].replace(/-/g, "");
-    const randomFour = Math.floor(1000 + Math.random() * 9000);
-    const generatedId = `SPX-${dateStr}-${randomFour}`;
-    setNewShipment(prev => ({ ...prev, trackingNumber: generatedId }));
-  };
-
-  // Create Shipment Form Submission
-  const handleCreateShipmentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trackingNum = newShipment.trackingNumber.trim().toUpperCase();
-    if (!trackingNum) {
-      showSystemMessage("error", "Tracking number is required.");
-      return;
+    localStorage.removeItem("shipplix_admin_session");
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("Error signing out from Supabase", err);
     }
+  };
 
-    const success = await registerShipment({
-      trackingNumber: trackingNum,
-      referenceNumber: newShipment.referenceNumber,
-      senderName: newShipment.senderName,
-      receiverName: newShipment.receiverName,
-      phoneNumber: newShipment.phoneNumber,
-      originCountry: newShipment.originCountry,
-      destinationCountry: newShipment.destinationCountry,
-      weight: newShipment.weight,
-      numberOfPackages: newShipment.numberOfPackages,
-      serviceType: newShipment.serviceType,
-      bookingDate: newShipment.bookingDate,
-      expectedDeliveryDate: newShipment.expectedDeliveryDate,
-      shipmentNotes: newShipment.shipmentNotes,
-      portGateway: newShipment.portGateway
-    });
+  // Create Shipment handler
+  const handleCreateShipment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionLoading("create");
+    try {
+      const trackingNum = newShipment.trackingNumber.trim().toUpperCase();
+      if (!trackingNum) {
+        showSystemMessage("error", "Tracking number is required.");
+        return;
+      }
 
-    if (success) {
-      // Reset Form State
+      // Check uniqueness
+      const { data: existing, error: checkError } = await supabase
+        .from("shipments")
+        .select("tracking_number")
+        .eq("tracking_number", trackingNum)
+        .maybeSingle();
+
+      if (existing) {
+        showSystemMessage("error", "A shipment with this tracking number already exists.");
+        return;
+      }
+
+      // Create initial history entry
+      const initialMilestoneIndex = 0; // Shipment Received
+      const milestoneName = MILESTONES[initialMilestoneIndex].name;
+      const description = MILESTONES[initialMilestoneIndex].description;
+      const nowStr = new Date().toISOString();
+
+      const milestoneHistory = [
+        {
+          milestoneIndex: initialMilestoneIndex,
+          milestoneName,
+          description,
+          timestamp: nowStr
+        }
+      ];
+
+      const referenceNumber = newShipment.referenceNumber || `REF-${Math.floor(10000000 + Math.random() * 90000000)}`;
+
+      const initialNotifs = [
+        {
+          id: `notif-email-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          timestamp: nowStr,
+          type: "email",
+          recipient: "shipplixservices@gmail.com",
+          milestoneName,
+          status: "sent"
+        },
+        {
+          id: `notif-wa-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          timestamp: nowStr,
+          type: "whatsapp",
+          recipient: newShipment.phoneNumber || "+234 916 827 3513",
+          milestoneName,
+          status: "sent"
+        }
+      ];
+
+      const dbShipment = {
+        tracking_number: trackingNum,
+        reference_number: referenceNumber,
+        sender_name: newShipment.senderName,
+        receiver_name: newShipment.receiverName,
+        phone_number: newShipment.phoneNumber,
+        origin_country: newShipment.originCountry || "Nigeria",
+        destination_country: newShipment.destinationCountry,
+        weight: parseFloat(newShipment.weight) || 0.1,
+        number_of_packages: parseInt(newShipment.numberOfPackages) || 1,
+        service_type: newShipment.serviceType || "Express",
+        booking_date: newShipment.bookingDate || nowStr.split('T')[0],
+        expected_delivery_date: newShipment.expectedDeliveryDate || nowStr.split('T')[0],
+        shipment_notes: newShipment.shipmentNotes || "",
+        current_milestone_index: initialMilestoneIndex,
+        milestone_history: milestoneHistory,
+        notifications: initialNotifs,
+        is_paused: false,
+        port_gateway: newShipment.portGateway || ""
+      };
+
+      const { data: insertedData, error: insertError } = await supabase
+        .from("shipments")
+        .insert([dbShipment])
+        .select();
+
+      if (insertError) {
+        showSystemMessage("error", insertError.message || "Failed to register shipment.");
+        return;
+      }
+
+      if (insertedData && insertedData[0]) {
+        const mapped = mapDbShipmentToShipment(insertedData[0]);
+        if (mapped) {
+          // Insert normalized shipment_events table too!
+          await supabase.from("shipment_events").insert([{
+            shipment_id: insertedData[0].id,
+            tracking_number: trackingNum,
+            milestone_index: initialMilestoneIndex,
+            milestone_name: milestoneName,
+            description: description,
+            timestamp: nowStr
+          }]);
+
+          showSystemMessage("success", `Shipment ${mapped.trackingNumber} registered successfully!`);
+        }
+      }
+
+      // Reset form
       setNewShipment({
         trackingNumber: "",
         referenceNumber: "",
@@ -298,71 +586,277 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
         shipmentNotes: "",
         portGateway: ""
       });
+      fetchDashboardData();
       setActiveTab("fleet");
-      fetchAdminNotifications();
+    } catch (err: any) {
+      console.error("Exception during shipment registration:", err);
+      showSystemMessage("error", `Network failure registering shipment: ${err?.message || err}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  // Edit Core Fields Form Submission
-  const handleUpdateCoreShipmentSubmit = async (e: React.FormEvent) => {
+  // Edit core fields handler
+  const handleUpdateCoreShipment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingShipment) return;
+    setActionLoading("edit");
+    try {
+      const { data, error } = await supabase
+        .from("shipments")
+        .update({
+          sender_name: editingShipment.senderName,
+          receiver_name: editingShipment.receiverName,
+          phone_number: editingShipment.phoneNumber,
+          origin_country: editingShipment.originCountry,
+          destination_country: editingShipment.destinationCountry,
+          weight: parseFloat(String(editingShipment.weight)) || 0.1,
+          number_of_packages: parseInt(String(editingShipment.numberOfPackages)) || 1,
+          service_type: editingShipment.serviceType,
+          booking_date: editingShipment.bookingDate,
+          expected_delivery_date: editingShipment.expectedDeliveryDate,
+          shipment_notes: editingShipment.shipmentNotes,
+          port_gateway: editingShipment.portGateway
+        })
+         .eq("tracking_number", editingShipment.trackingNumber.toUpperCase())
+         .select();
 
-    const success = await updateShipmentDetails(editingShipment);
-    if (success) {
-      if (selectedShipment && selectedShipment.trackingNumber.toUpperCase() === editingShipment.trackingNumber.toUpperCase()) {
-        setSelectedShipment(editingShipment);
+      if (error) {
+        showSystemMessage("error", error.message || "Update failed.");
+        return;
       }
-      setEditingShipment(null);
-      fetchAdminNotifications();
+
+      if (data && data[0]) {
+        const mapped = mapDbShipmentToShipment(data[0]);
+        showSystemMessage("success", `Shipment details updated successfully!`);
+        setEditingShipment(null);
+        if (selectedShipment && selectedShipment.trackingNumber.toUpperCase() === mapped!.trackingNumber.toUpperCase()) {
+          setSelectedShipment(mapped);
+        }
+        fetchDashboardData();
+      }
+    } catch (err) {
+      showSystemMessage("error", "Network error updating details.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  // Milestone Update Form Submission
-  const handleUpdateMilestoneSubmit = async (e: React.FormEvent) => {
+  // Milestone transition handler
+  const handleUpdateMilestone = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedShipment) return;
+    setActionLoading("milestone");
 
-    const updated = await updateMilestone(selectedShipment, milestoneUpdate.milestoneIndex, milestoneUpdate.customDescription);
-    if (updated) {
-      setSelectedShipment(updated);
-      fetchAdminNotifications();
+    try {
+      const parsedIndex = parseInt(String(milestoneUpdate.milestoneIndex));
+      if (parsedIndex < 0 || parsedIndex >= MILESTONES.length) {
+        showSystemMessage("error", "Invalid milestone index.");
+        return;
+      }
+
+      const milestoneName = MILESTONES[parsedIndex].name;
+      const description = milestoneUpdate.customDescription || MILESTONES[parsedIndex].description;
+      const timestamp = new Date().toISOString();
+
+      const existingHistory = [...(selectedShipment.milestoneHistory || [])];
+      const historyIndex = existingHistory.findIndex(h => h.milestoneIndex === parsedIndex);
+      const newHistoryEntry = {
+        milestoneIndex: parsedIndex,
+        milestoneName,
+        description,
+        timestamp
+      };
+
+      if (historyIndex !== -1) {
+        existingHistory[historyIndex] = newHistoryEntry;
+      } else {
+        existingHistory.push(newHistoryEntry);
+      }
+      existingHistory.sort((a, b) => a.milestoneIndex - b.milestoneIndex);
+
+      const newNotifs = [
+        {
+          id: `notif-email-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          timestamp,
+          type: "email",
+          recipient: "shipplixservices@gmail.com",
+          milestoneName,
+          status: "sent"
+        },
+        {
+          id: `notif-wa-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          timestamp,
+          type: "whatsapp",
+          recipient: selectedShipment.phoneNumber || "+234 916 827 3513",
+          milestoneName,
+          status: "sent"
+        }
+      ];
+      const updatedNotifications = [...(selectedShipment.notifications || []), ...newNotifs];
+
+      const { data, error } = await supabase
+        .from("shipments")
+        .update({
+          current_milestone_index: parsedIndex,
+          milestone_history: existingHistory,
+          notifications: updatedNotifications
+        })
+        .eq("tracking_number", selectedShipment.trackingNumber.toUpperCase())
+        .select();
+
+      if (error) {
+        showSystemMessage("error", error.message || "Failed to transition milestone.");
+        return;
+      }
+
+      if (data && data[0]) {
+        const mapped = mapDbShipmentToShipment(data[0]);
+        
+        // Create event in shipment_events
+        await supabase.from("shipment_events").insert([{
+          shipment_id: data[0].id,
+          tracking_number: selectedShipment.trackingNumber.toUpperCase(),
+          milestone_index: parsedIndex,
+          milestone_name: milestoneName,
+          description: description,
+          timestamp: timestamp
+        }]);
+
+        showSystemMessage("success", `Transit stage advanced for ${selectedShipment.trackingNumber}! Notifications simulated successfully.`);
+        setSelectedShipment(mapped);
+        fetchDashboardData();
+      }
+    } catch (err) {
+      showSystemMessage("error", "Network error during stage advancement.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  // Delete Action
-  const handleDeleteAction = async (trackingNumber: string) => {
-    const success = await deleteShipment(trackingNumber);
-    if (success) {
+  // Delete handler
+  const handleDeleteShipment = async (trackingNumber: string) => {
+    if (!confirm(`Are you absolutely sure you want to delete shipment ${trackingNumber}? This action is permanent.`)) {
+      return;
+    }
+    setActionLoading(`delete-${trackingNumber}`);
+    try {
+      const { error } = await supabase
+        .from("shipments")
+        .delete()
+        .eq("tracking_number", trackingNumber.toUpperCase());
+
+      if (error) {
+        showSystemMessage("error", error.message || "Delete request failed.");
+        return;
+      }
+
+      showSystemMessage("success", `Shipment ${trackingNumber} has been deleted.`);
       if (selectedShipment?.trackingNumber === trackingNumber) {
         setSelectedShipment(null);
       }
-      fetchAdminNotifications();
+      fetchDashboardData();
+    } catch (err) {
+      showSystemMessage("error", "Network error deleting shipment.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  // Hold / Resume Toggle Action
-  const handlePauseToggleAction = async (shipment: Shipment) => {
-    const updated = await togglePauseStatus(shipment);
-    if (updated) {
-      if (selectedShipment?.trackingNumber === shipment.trackingNumber) {
-        setSelectedShipment(updated);
+  // Hold / Resume Handlers
+  const handlePauseToggle = async (shipmentToToggle: Shipment) => {
+    const isHold = !shipmentToToggle.isPaused;
+    setActionLoading(`pause-${shipmentToToggle.trackingNumber}`);
+
+    try {
+      const { data, error } = await supabase
+        .from("shipments")
+        .update({ is_paused: isHold })
+        .eq("tracking_number", shipmentToToggle.trackingNumber.toUpperCase())
+        .select();
+
+      if (error) {
+        showSystemMessage("error", "Failed to toggle pause status.");
+        return;
       }
-      fetchAdminNotifications();
+
+      if (data && data[0]) {
+        const mapped = mapDbShipmentToShipment(data[0]);
+        showSystemMessage("success", `Shipment status updated to ${isHold ? "ON HOLD" : "ACTIVE TRANSIT"}.`);
+        if (selectedShipment?.trackingNumber === shipmentToToggle.trackingNumber) {
+          setSelectedShipment(mapped);
+        }
+        fetchDashboardData();
+      }
+    } catch (err) {
+      showSystemMessage("error", "Connection failed toggling pause.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  // Export CSV helper
+  // Trigger manual backup
+  const handleTriggerBackup = async () => {
+    setActionLoading("backup");
+    try {
+      const response = await fetch("/api/backup", { method: "POST" });
+      const data = await response.json();
+
+      if (data.success) {
+        showSystemMessage("success", `Encrypted data backup completed. Logged to system server as: ${data.backupFile}`);
+      } else {
+        showSystemMessage("error", "Backup routine failed.");
+      }
+    } catch (err) {
+      showSystemMessage("error", "Network timeout executing backup.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Export to Excel / CSV format
   const handleExportCSV = () => {
-    const result = exportShipmentsToCSV(shipments);
-    if (result.success) {
-      showSystemMessage("success", result.message);
-    } else {
-      showSystemMessage("error", result.message);
-    }
+    if (shipments.length === 0) return;
+
+    // Create CSV content headers
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Tracking Number,Reference Number,Sender Name,Receiver Name,Phone Number,Origin,Destination,Weight (KG),Packages,Service Type,Booking Date,Expected Delivery Date,Notes,Paused,Current Milestone\n";
+
+    // Loop through shipments
+    shipments.forEach(s => {
+      const row = [
+        s.trackingNumber,
+        s.referenceNumber,
+        `"${s.senderName.replace(/"/g, '""')}"`,
+        `"${s.receiverName.replace(/"/g, '""')}"`,
+        `"${s.phoneNumber || ''}"`,
+        s.originCountry,
+        s.destinationCountry,
+        s.weight,
+        s.numberOfPackages,
+        s.serviceType,
+        s.bookingDate,
+        s.expectedDeliveryDate,
+        `"${(s.shipmentNotes || '').replace(/"/g, '""')}"`,
+        s.isPaused ? "YES" : "NO",
+        `"${MILESTONES[s.currentMilestoneIndex].name}"`
+      ].join(",");
+      csvContent += row + "\n";
+    });
+
+    // Download flow
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `SHIPPLIX_CARGO_FLEET_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showSystemMessage("success", "Exported database successfully. Ready for Microsoft Excel.");
   };
 
-  // Set selected shipment for milestone update control tab
+  // Set the shipment for milestone updating console
   const selectForMilestoneUpdate = (sh: Shipment) => {
     setSelectedShipment(sh);
     setMilestoneUpdate({
@@ -371,6 +865,33 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
     });
     setActiveTab("update");
   };
+
+  // Filter & Search matching
+  const filteredShipments = shipments.filter(s => {
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = 
+      s.trackingNumber.toLowerCase().includes(query) ||
+      s.referenceNumber.toLowerCase().includes(query) ||
+      s.senderName.toLowerCase().includes(query) ||
+      s.receiverName.toLowerCase().includes(query);
+      
+    const matchesDest = filterDestination ? s.destinationCountry.toLowerCase() === filterDestination.toLowerCase() : true;
+    const matchesService = filterService ? s.serviceType.toLowerCase() === filterService.toLowerCase() : true;
+    
+    // Status matching (Delivered index is 23, On Hold checks boolean, In Transit is anything between 1 and 22)
+    let matchesStatus = true;
+    if (filterStatus) {
+      if (filterStatus === "paused") matchesStatus = s.isPaused;
+      else if (filterStatus === "delivered") matchesStatus = s.currentMilestoneIndex === 23;
+      else if (filterStatus === "transit") matchesStatus = s.currentMilestoneIndex > 0 && s.currentMilestoneIndex < 23 && !s.isPaused;
+      else if (filterStatus === "pending") matchesStatus = s.currentMilestoneIndex === 0;
+    }
+
+    return matchesSearch && matchesDest && matchesService && matchesStatus;
+  });
+
+  // Unique list of destinations in DB for filter
+  const uniqueDestinations = Array.from(new Set(shipments.map(s => s.destinationCountry)));
 
   if (!isAuthenticated) {
     return (
@@ -419,7 +940,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
               id="admin-login-submit"
               type="submit"
               disabled={authLoading}
-              className="w-full bg-[#032B73] text-[#FFD700] hover:bg-blue-900 active:scale-98 transition-all font-black text-sm py-3 rounded-lg flex items-center justify-center space-x-2 shadow text-center"
+              className="w-full bg-[#032B73] text-[#FFD700] hover:bg-blue-900 active:scale-98 transition-all font-black text-sm py-3 rounded-lg flex items-center justify-center space-x-2 shadow"
             >
               {authLoading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -462,354 +983,14 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
           </p>
         </div>
 
-        <div className="flex items-center space-x-3 self-stretch sm:self-auto justify-end">
-          {/* Notification Center Popover Trigger */}
-          <div className="relative">
-            <button
-              id="admin-notif-bell"
-              onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
-              className={`p-2.5 rounded-lg border transition-all relative flex items-center justify-center ${
-                showNotificationsDropdown 
-                  ? "bg-blue-50 border-blue-200 text-[#032B73]" 
-                  : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <Bell className={`h-5 w-5 ${unreadNotificationsCount > 0 ? "animate-bounce" : ""}`} />
-              {unreadNotificationsCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-mono font-black text-[9px] h-5 w-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                  {unreadNotificationsCount}
-                </span>
-              )}
-            </button>
-
-            {showNotificationsDropdown && (
-              <div 
-                id="notif-dropdown-menu" 
-                className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl border border-gray-200 shadow-xl z-50 overflow-hidden text-slate-700 animate-in fade-in slide-in-from-top-3 duration-200"
-              >
-                {/* Dropdown Header */}
-                <div className="p-4 border-b border-gray-100 bg-slate-50 flex justify-between items-center">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-extrabold text-sm text-[#032B73] uppercase tracking-wider font-mono">
-                      System Notifications
-                    </h3>
-                    {unreadNotificationsCount > 0 && (
-                      <span className="bg-rose-100 text-rose-700 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">
-                        {unreadNotificationsCount} unread
-                      </span>
-                    )}
-                  </div>
-                  {notifications.length > 0 && (
-                    <button
-                      onClick={async () => {
-                        try {
-                          const updated = await shipmentService.markAllNotificationsAsRead();
-                          setNotifications(updated);
-                          setUnreadNotificationsCount(0);
-                          showSystemMessage("success", "All alerts marked as read.");
-                        } catch (err) {
-                          showSystemMessage("error", "Failed to clear alert status.");
-                        }
-                      }}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
-                    >
-                      Mark all read
-                    </button>
-                  )}
-                </div>
-
-                {/* Dropdown List */}
-                <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
-                  {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400 space-y-2">
-                      <Bell className="h-8 w-8 mx-auto stroke-1" />
-                      <p className="text-xs">No notifications logged in this cycle.</p>
-                    </div>
-                  ) : (
-                    notifications.slice(0, 5).map((notif) => {
-                      const getIcon = () => {
-                        switch (notif.type) {
-                          case "payment_outstanding":
-                            return <DollarSign className="h-4 w-4 text-emerald-600" />;
-                          case "shipment_delayed":
-                            return <AlertTriangle className="h-4 w-4 text-amber-600" />;
-                          case "shipment_delivered":
-                            return <CheckCircle className="h-4 w-4 text-green-600" />;
-                          case "customer_created":
-                            return <UserPlus className="h-4 w-4 text-blue-600" />;
-                          case "shipment_updated":
-                            return <RefreshCw className="h-4 w-4 text-indigo-600" />;
-                          case "admin_login":
-                            return <Shield className="h-4 w-4 text-indigo-800" />;
-                          case "system_error":
-                            return <ShieldAlert className="h-4 w-4 text-rose-600" />;
-                          default:
-                            return <Info className="h-4 w-4 text-gray-600" />;
-                        }
-                      };
-
-                      const getBg = () => {
-                        switch (notif.type) {
-                          case "payment_outstanding": return "bg-emerald-50 border-emerald-100";
-                          case "shipment_delayed": return "bg-amber-50 border-amber-100";
-                          case "shipment_delivered": return "bg-green-50 border-green-100";
-                          case "customer_created": return "bg-blue-50 border-blue-100";
-                          case "shipment_updated": return "bg-indigo-50 border-indigo-100";
-                          case "admin_login": return "bg-slate-50 border-slate-100";
-                          case "system_error": return "bg-rose-50 border-rose-100";
-                          default: return "bg-gray-50 border-gray-100";
-                        }
-                      };
-
-                      return (
-                        <div
-                          key={notif.id}
-                          className={`p-3.5 hover:bg-slate-50 transition-colors flex items-start space-x-3 ${
-                            !notif.read ? "bg-blue-50/40" : ""
-                          }`}
-                        >
-                          <div className={`p-2 rounded-lg border shrink-0 ${getBg()}`}>
-                            {getIcon()}
-                          </div>
-                          <div className="space-y-1 min-w-0 flex-1">
-                            <div className="flex justify-between items-start">
-                              <p className={`text-xs font-bold truncate leading-tight ${notif.read ? "text-slate-600" : "text-slate-900"}`}>
-                                {notif.title}
-                              </p>
-                              {!notif.read && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-blue-600 shrink-0 mt-1 ml-1" />
-                              )}
-                            </div>
-                            <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">
-                              {notif.message}
-                            </p>
-                            
-                            <div className="flex justify-between items-center pt-1">
-                              <span className="text-[9px] text-gray-400 font-mono">
-                                {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-
-                              <div className="flex space-x-2">
-                                {!notif.read && (
-                                  <button
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      try {
-                                        const updatedNotif = await shipmentService.markNotificationAsRead(notif.id);
-                                        setNotifications(prev => prev.map(n => n.id === notif.id ? updatedNotif : n));
-                                        setUnreadNotificationsCount(prev => Math.max(0, prev - 1));
-                                      } catch (err) {
-                                        console.error(err);
-                                      }
-                                    }}
-                                    className="text-[10px] font-bold text-blue-600 hover:underline"
-                                  >
-                                    Mark read
-                                  </button>
-                                )}
-                                {notif.meta?.trackingNumber && (
-                                  <button
-                                    onClick={() => {
-                                      const tracking = notif.meta.trackingNumber;
-                                      const matched = shipments.find(s => s.trackingNumber.toUpperCase() === tracking.toUpperCase());
-                                      if (matched) {
-                                        setSelectedShipment(matched);
-                                        setActiveTab("update");
-                                        setShowNotificationsDropdown(false);
-                                      } else {
-                                        showSystemMessage("error", `Shipment ${tracking} no longer exists.`);
-                                      }
-                                    }}
-                                    className="text-[10px] font-black text-indigo-700 hover:underline flex items-center"
-                                  >
-                                    Inspect <ExternalLink className="h-2.5 w-2.5 ml-0.5" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Dropdown Footer */}
-                <div className="p-2 border-t border-gray-100 bg-slate-50 flex gap-2">
-                  <button
-                    onClick={() => {
-                      setActiveTab("notifications");
-                      setShowNotificationsDropdown(false);
-                    }}
-                    className="flex-1 text-center text-xs font-bold text-blue-800 hover:bg-blue-100/60 py-2 rounded-lg transition-colors border border-blue-200"
-                  >
-                    View All Notifications
-                  </button>
-                  <button
-                    onClick={async () => {
-                      try {
-                        await shipmentService.simulateSystemError();
-                        fetchAdminNotifications();
-                        showSystemMessage("success", "Simulated system error alert fired.");
-                      } catch (err) {
-                        showSystemMessage("error", "Error simulation failed.");
-                      }
-                    }}
-                    className="px-3 text-center text-xs font-bold text-rose-700 hover:bg-rose-100/60 py-2 rounded-lg transition-colors border border-rose-200"
-                    title="Simulate System Error for quick verification"
-                  >
-                    Test Err
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <button
-            id="admin-logout-btn"
-            onClick={handleLogout}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Sign Out Session</span>
-          </button>
-        </div>
-      </div>
-
-      {/* GLOBAL COMMAND SEARCH BAR */}
-      <div className="bg-[#032B73] rounded-xl border border-blue-800 p-5 shadow-sm space-y-3 relative text-white">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div>
-            <span className="text-[10px] font-bold text-[#FFD700] bg-white/10 px-2.5 py-0.5 rounded border border-white/15 uppercase tracking-widest font-mono">
-              ⚡ INSTANT GLOBAL FLEET SEARCH
-            </span>
-            <h3 className="text-sm font-bold text-white mt-1">
-              Global Search Engine
-            </h3>
-            <p className="text-xs text-blue-100/80">
-              Locate any shipment by Tracking Number, Reference Number, Customer Name, Phone, Email, Destination, Country, or Receiver Name instantly.
-            </p>
-          </div>
-          
-          <div className="text-right text-xs text-blue-200 font-mono hidden sm:block">
-            ACTIVE FLEET ENTRIES: <span className="text-[#FFD700] font-bold">{indexedShipments.length}</span>
-          </div>
-        </div>
-
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3.5 h-4.5 w-4.5 text-blue-300" />
-          <input
-            id="global-command-search"
-            type="text"
-            placeholder="Search shipments..."
-            value={globalSearchQuery}
-            onChange={(e) => setGlobalSearchQuery(e.target.value)}
-            className="w-full bg-white/10 hover:bg-white/15 focus:bg-white text-white focus:text-slate-900 pl-10 pr-16 py-3.5 rounded-lg border border-white/10 focus:border-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD700] transition-all placeholder-blue-200/60 focus:placeholder-slate-400 font-medium"
-          />
-          {globalSearchQuery && (
-            <button
-              onClick={() => setGlobalSearchQuery("")}
-              className="absolute right-3.5 top-2.5 text-blue-300 hover:text-white focus:outline-none text-xs bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded-md font-bold transition-all"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
-        {/* Floating results panel */}
-        {globalSearchQuery.trim() !== "" && (
-          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 bg-white rounded-xl border border-gray-200 shadow-2xl max-h-[380px] overflow-y-auto divide-y divide-gray-100 text-slate-900 animate-[fadeIn_0.15s_ease-out]">
-            <div className="bg-slate-50 px-4 py-2.5 flex justify-between items-center text-[10px] text-gray-500 font-mono font-bold border-b border-gray-100 tracking-wider">
-              <span>MATCHING SHIPMENTS ({globalSearchResults.length} FOUND)</span>
-              <span>ESC / CLEAR TO DISMISS</span>
-            </div>
-            
-            {globalSearchResults.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 space-y-1">
-                <p className="text-sm font-bold text-[#032B73]">No matching shipments found</p>
-                <p className="text-xs text-gray-400">Try searching with other details like phone, destination, or reference number</p>
-              </div>
-            ) : (
-              globalSearchResults.map(({ shipment }) => {
-                const isDelivered = shipment.currentMilestoneIndex === 23;
-                const isPaused = shipment.isPaused;
-                
-                return (
-                  <div 
-                    key={shipment.trackingNumber} 
-                    className="p-3.5 sm:p-4 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-                  >
-                    <div className="space-y-1.5 flex-grow min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs font-black text-[#032B73] bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded">
-                          {shipment.trackingNumber}
-                        </span>
-                        <span className="font-mono text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                          REF: {shipment.referenceNumber}
-                        </span>
-                        
-                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                          isPaused
-                            ? "bg-amber-100 text-amber-800 border border-amber-200"
-                            : isDelivered
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                              : "bg-blue-100 text-blue-800 border border-blue-200"
-                        }`}>
-                          {isPaused ? "ON HOLD" : isDelivered ? "DELIVERED" : `STAGE ${shipment.currentMilestoneIndex + 1}`}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
-                        <p className="text-gray-700 truncate">
-                          <strong className="text-gray-900 font-bold">Customer:</strong> {shipment.senderName}
-                        </p>
-                        <p className="text-gray-700 truncate">
-                          <strong className="text-gray-900 font-bold">Receiver:</strong> {shipment.receiverName}
-                        </p>
-                        <p className="text-gray-500 font-mono text-[11px]">
-                          <strong className="font-sans text-gray-900 font-bold">Phone:</strong> {shipment.phoneNumber}
-                        </p>
-                        <p className="text-gray-500 font-mono text-[11px] truncate">
-                          <strong className="font-sans text-gray-900 font-bold">Email:</strong> {shipment.notifications?.find(n => n.type === 'email')?.recipient || "None"}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center space-x-1.5 text-[10px] text-gray-600 font-semibold bg-gray-50 p-1.5 rounded border border-gray-100 w-fit mt-1">
-                        <span className="bg-[#032B73] text-white font-mono text-[9px] px-1.5 py-0.5 rounded uppercase">ROUTE</span>
-                        <span>{shipment.originCountry} → {shipment.destinationCountry} {shipment.portGateway ? `(${shipment.portGateway})` : ""}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex sm:flex-row md:flex-col lg:flex-row items-stretch md:items-end gap-2 shrink-0 w-full md:w-auto">
-                      <button
-                        onClick={() => {
-                          setSelectedShipment(shipment);
-                          setActiveTab("update");
-                          setGlobalSearchQuery("");
-                        }}
-                        className="flex-1 md:flex-none text-center bg-[#032B73] hover:bg-blue-900 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition-all flex items-center justify-center space-x-1 shadow-sm"
-                      >
-                        <Sliders className="h-3.5 w-3.5" />
-                        <span>Transit Control</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => {
-                          onTrackingRequest(shipment.trackingNumber);
-                          setGlobalSearchQuery("");
-                        }}
-                        className="flex-1 md:flex-none text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs px-3 py-2.5 rounded-lg transition-all flex items-center justify-center space-x-1 border border-gray-200"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        <span>Public Track</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
+        <button
+          id="admin-logout-btn"
+          onClick={handleLogout}
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Sign Out Session</span>
+        </button>
       </div>
 
       {/* System Toast Alerts */}
@@ -895,54 +1076,15 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
       {/* Tab Navigation links */}
       <div className="flex border-b border-gray-200 overflow-x-auto pb-px">
         <button
-          id="tab-dashboard"
-          onClick={() => setActiveTab("dashboard")}
-          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
-            activeTab === "dashboard" 
-              ? "border-b-2 border-[#032B73] text-[#032B73]" 
-              : "border-transparent text-gray-500 hover:text-gray-800"
-          }`}
-        >
-          <LayoutDashboard className="h-4.5 w-4.5 text-blue-800" />
-          <span>Executive Dashboard</span>
-        </button>
-
-        <button
-          id="tab-finance"
-          onClick={() => setActiveTab("finance")}
-          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
-            activeTab === "finance" 
-              ? "border-b-2 border-[#032B73] text-[#032B73]" 
-              : "border-transparent text-gray-500 hover:text-gray-800"
-          }`}
-        >
-          <Receipt className="h-4.5 w-4.5 text-blue-800" />
-          <span>Finance Ledger</span>
-        </button>
-
-        <button
-          id="tab-reports"
-          onClick={() => setActiveTab("reports")}
-          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
-            activeTab === "reports" 
-              ? "border-b-2 border-[#032B73] text-[#032B73]" 
-              : "border-transparent text-gray-500 hover:text-gray-800"
-          }`}
-        >
-          <FileText className="h-4.5 w-4.5 text-blue-800" />
-          <span>Reports & Insights</span>
-        </button>
-
-        <button
           id="tab-fleet"
           onClick={() => setActiveTab("fleet")}
           className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
             activeTab === "fleet" 
-              ? "border-b-2 border-[#032B73] text-[#032B73]" 
+              ? "border-[#032B73] text-[#032B73]" 
               : "border-transparent text-gray-500 hover:text-gray-800"
           }`}
         >
-          <Package className="h-4.5 w-4.5" />
+          <LayoutDashboard className="h-4.5 w-4.5" />
           <span>Active Shipment Fleet ({filteredShipments.length})</span>
         </button>
 
@@ -951,7 +1093,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
           onClick={() => setActiveTab("add")}
           className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
             activeTab === "add" 
-              ? "border-b-2 border-[#032B73] text-[#032B73]" 
+              ? "border-[#032B73] text-[#032B73]" 
               : "border-transparent text-gray-500 hover:text-gray-800"
           }`}
         >
@@ -967,7 +1109,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
             !selectedShipment ? "opacity-40 cursor-not-allowed" : ""
           } ${
             activeTab === "update" 
-              ? "border-b-2 border-[#032B73] text-[#032B73]" 
+              ? "border-[#032B73] text-[#032B73]" 
               : "border-transparent text-gray-500 hover:text-gray-800"
           }`}
         >
@@ -980,102 +1122,16 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
           onClick={() => setActiveTab("backups")}
           className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
             activeTab === "backups" 
-              ? "border-b-2 border-[#032B73] text-[#032B73]" 
+              ? "border-[#032B73] text-[#032B73]" 
               : "border-transparent text-gray-500 hover:text-gray-800"
           }`}
         >
           <Database className="h-4.5 w-4.5" />
           <span>Server Backups & Security</span>
         </button>
-
-        <button
-          id="tab-settings"
-          onClick={() => setActiveTab("settings")}
-          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
-            activeTab === "settings" 
-              ? "border-b-2 border-[#032B73] text-[#032B73]" 
-              : "border-transparent text-gray-500 hover:text-gray-800"
-          }`}
-        >
-          <Settings className="h-4.5 w-4.5" />
-          <span>Business Settings</span>
-        </button>
-
-        <button
-          id="tab-notifications"
-          onClick={() => setActiveTab("notifications")}
-          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all relative ${
-            activeTab === "notifications" 
-              ? "border-b-2 border-[#032B73] text-[#032B73]" 
-              : "border-transparent text-gray-500 hover:text-gray-800"
-          }`}
-        >
-          <Bell className="h-4.5 w-4.5 text-blue-800" />
-          <span>Notification Center</span>
-          {unreadNotificationsCount > 0 && (
-            <span className="ml-1 bg-rose-500 text-white font-mono font-bold text-[10px] px-1.5 py-0.5 rounded-full animate-pulse">
-              {unreadNotificationsCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          id="tab-audit"
-          onClick={() => setActiveTab("audit")}
-          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
-            activeTab === "audit" 
-              ? "border-b-2 border-[#032B73] text-[#032B73]" 
-              : "border-transparent text-gray-500 hover:text-gray-800"
-          }`}
-        >
-          <History className="h-4.5 w-4.5 text-indigo-700" />
-          <span>Audit Ledger</span>
-        </button>
       </div>
 
       {/* Tab Panels */}
-      
-      {/* 0. Operations Dashboard Panel */}
-      {activeTab === "dashboard" && (
-        <div className="animate-[fadeIn_0.2s_ease-out]">
-          <OperationsDashboard 
-            shipments={shipments} 
-            loading={loading} 
-            onSelectShipment={(trackingNum) => {
-              const found = shipments.find(s => s.trackingNumber === trackingNum);
-              if (found) {
-                setSelectedShipment(found);
-                setMilestoneUpdate({
-                  milestoneIndex: found.currentMilestoneIndex,
-                  customDescription: MILESTONES[found.currentMilestoneIndex].description
-                });
-                setActiveTab("fleet");
-              }
-            }}
-          />
-        </div>
-      )}
-
-      {/* 0.5 Finance Ledger Panel */}
-      {activeTab === "finance" && (
-        <div className="animate-[fadeIn_0.2s_ease-out]">
-          <FinanceModule 
-            shipments={shipments}
-            loading={loading}
-            onUpdateShipmentDetails={updateShipmentDetails}
-          />
-        </div>
-      )}
-
-      {/* 0.75 Reports & Insights Panel */}
-      {activeTab === "reports" && (
-        <div className="animate-[fadeIn_0.2s_ease-out]">
-          <ReportsModule 
-            shipments={shipments}
-            loading={loading}
-          />
-        </div>
-      )}
       
       {/* 1. Fleet Panel */}
       {activeTab === "fleet" && (
@@ -1256,7 +1312,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                               <button
                                 id={`btn-hold-${s.trackingNumber}`}
                                 title={s.isPaused ? "Resume Dispatch" : "Pause / Hold"}
-                                onClick={() => handlePauseToggleAction(s)}
+                                onClick={() => handlePauseToggle(s)}
                                 className={`p-1.5 rounded transition-all ${
                                   s.isPaused 
                                     ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-100" 
@@ -1270,7 +1326,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                               <button
                                 id={`btn-delete-${s.trackingNumber}`}
                                 title="Delete Permanently"
-                                onClick={() => handleDeleteAction(s.trackingNumber)}
+                                onClick={() => handleDeleteShipment(s.trackingNumber)}
                                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1295,7 +1351,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
 
           {/* Quick Edit Modal Layer (Conditional Overlap) */}
           {editingShipment && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-[fadeIn_0.2s_ease-out]">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
               <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl max-w-2xl w-full overflow-hidden animate-[zoomIn_0.2s_ease-out]">
                 <div className="bg-[#032B73] text-white p-5 flex justify-between items-center border-b-4 border-[#FFD700]">
                   <h3 className="text-lg font-black tracking-tight">Edit Shipment Fields - {editingShipment.trackingNumber}</h3>
@@ -1307,7 +1363,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                   </button>
                 </div>
 
-                <form onSubmit={handleUpdateCoreShipmentSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <form onSubmit={handleUpdateCoreShipment} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[11px] font-mono font-bold text-gray-400 block">SENDER/CONSIGNOR HUB</label>
@@ -1433,7 +1489,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                     <button
                       type="submit"
                       disabled={actionLoading === "edit"}
-                      className="bg-[#032B73] text-[#FFD700] hover:bg-blue-900 px-5 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center space-x-2 shadow text-center"
+                      className="bg-[#032B73] text-[#FFD700] hover:bg-blue-900 px-5 py-2.5 rounded-lg text-xs font-black transition-all flex items-center space-x-2 shadow"
                     >
                       {actionLoading === "edit" ? <RefreshCw className="h-4.5 w-4.5 animate-spin" /> : <span>Apply Changes</span>}
                     </button>
@@ -1465,7 +1521,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
             </button>
           </div>
 
-          <form onSubmit={handleCreateShipmentSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleCreateShipment} className="p-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               
               <div className="space-y-1.5">
@@ -1546,17 +1602,15 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[11px] font-mono font-bold text-gray-500 block uppercase">Origin Center <span className="text-red-500">*</span></label>
-                <select
+                <label className="text-[11px] font-mono font-bold text-gray-500 block uppercase">Origin Center</label>
+                <input
                   id="form-origin"
+                  type="text"
                   value={newShipment.originCountry}
                   onChange={(e) => setNewShipment({ ...newShipment, originCountry: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm font-semibold"
-                >
-                  {settings.countries.supportedOrigins.map(country => (
-                    <option key={country} value={country}>{country}</option>
-                  ))}
-                </select>
+                  className="w-full border border-gray-200 rounded-lg p-2.5 text-sm font-semibold bg-gray-50"
+                  readOnly
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -1567,9 +1621,9 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                   onChange={(e) => setNewShipment({ ...newShipment, destinationCountry: e.target.value })}
                   className="w-full border border-gray-200 rounded-lg p-2.5 text-sm font-semibold"
                 >
-                  {settings.countries.supportedDestinations.map(country => (
-                    <option key={country} value={country}>{country}</option>
-                  ))}
+                  <option value="United States">United States</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Canada">Canada</option>
                 </select>
               </div>
 
@@ -1663,7 +1717,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
                 id="btn-register-submit"
                 type="submit"
                 disabled={actionLoading === "create"}
-                className="bg-[#032B73] hover:bg-blue-900 text-[#FFD700] px-7 py-3 rounded-lg text-xs font-black transition-all flex items-center justify-center space-x-2 shadow text-center"
+                className="bg-[#032B73] hover:bg-blue-900 text-[#FFD700] px-7 py-3 rounded-lg text-xs font-black transition-all flex items-center space-x-2 shadow"
               >
                 {actionLoading === "create" ? (
                   <RefreshCw className="h-4.5 w-4.5 animate-spin" />
@@ -1679,39 +1733,142 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
         </div>
       )}
 
-      {/* 3. Milestone & Shipment Management Hub */}
-      {activeTab === "update" && activeShipment && (
-        <ShipmentManagementHub
-          shipment={activeShipment}
-          actionLoading={actionLoading}
-          onUpdateMilestone={async (s, index, desc) => {
-            const res = await updateMilestone(s, index, desc);
-            fetchAdminNotifications();
-            return res;
-          }}
-          onUpdateStatusAndHealth={async (tn, h, d, auth) => {
-            const res = await updateStatusAndHealth(tn, h, d, auth);
-            fetchAdminNotifications();
-            return res;
-          }}
-          onAddInternalNote={async (tn, t, auth) => {
-            const res = await addInternalNote(tn, t, auth);
-            fetchAdminNotifications();
-            return res;
-          }}
-          onUploadDocument={async (tn, d) => {
-            const res = await uploadDocument(tn, d);
-            fetchAdminNotifications();
-            return res;
-          }}
-          onAddPaymentTransaction={async (tn, tx) => {
-            const res = await addPaymentTransaction(tn, tx);
-            fetchAdminNotifications();
-            return res;
-          }}
-          onReturnToFleet={() => setActiveTab("fleet")}
-          adminEmail={adminUser?.email || "admin@shipplix.com"}
-        />
+      {/* 3. Milestone Controller Panel */}
+      {activeTab === "update" && selectedShipment && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6 animate-[fadeIn_0.2s_ease-out]">
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-4 gap-4">
+            <div>
+              <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-800 px-2.5 py-1 rounded border border-blue-100">
+                STAGE ADVANCEMENT WORKSPACE
+              </span>
+              <h3 className="text-base font-bold text-[#032B73] mt-1">
+                Milestone Status Control: <span className="font-mono">{selectedShipment.trackingNumber}</span>
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Consignee: <strong className="text-gray-700">{selectedShipment.receiverName}</strong> ({selectedShipment.destinationCountry}{selectedShipment.portGateway ? ` - ${selectedShipment.portGateway}` : ""})
+              </p>
+            </div>
+
+            <div className="text-right">
+              <span className="text-[10px] text-gray-400 font-mono block">CURRENT STATUS STAGE</span>
+              <span className="inline-flex bg-blue-100 text-blue-800 text-xs font-black px-3 py-1.5 rounded-full mt-1">
+                Stage {selectedShipment.currentMilestoneIndex + 1}: {MILESTONES[selectedShipment.currentMilestoneIndex].name}
+              </span>
+            </div>
+          </div>
+
+          <form onSubmit={handleUpdateMilestone} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            {/* Left: Predefined milestone selectors */}
+            <div className="md:col-span-1 space-y-1.5">
+              <label className="text-[11px] font-mono font-bold text-gray-500 block uppercase">
+                Select Transit Milestone (1 to {MILESTONES.length})
+              </label>
+              
+              <div className="border border-gray-200 rounded-lg max-h-[350px] overflow-y-auto divide-y divide-gray-100 shadow-inner">
+                {MILESTONES.map((mil, mIdx) => {
+                  const isCur = mIdx === milestoneUpdate.milestoneIndex;
+                  const isPast = mIdx <= selectedShipment.currentMilestoneIndex;
+                  return (
+                    <button
+                      id={`select-milestone-${mIdx}`}
+                      key={mIdx}
+                      type="button"
+                      onClick={() => setMilestoneUpdate({
+                        milestoneIndex: mIdx,
+                        customDescription: MILESTONES[mIdx].description
+                      })}
+                      className={`w-full text-left p-2.5 text-xs font-semibold flex items-center justify-between transition-colors ${
+                        isCur 
+                          ? "bg-[#032B73] text-white" 
+                          : isPast 
+                            ? "bg-blue-50/50 text-blue-900 hover:bg-blue-50" 
+                            : "bg-white text-gray-500 hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span className="font-mono text-[10px] opacity-60">{(mIdx + 1).toString().padStart(2, '0')}.</span>
+                        <span className="truncate">{mil.name}</span>
+                      </div>
+                      
+                      {isPast && !isCur && (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right: Milestone notes and submit (2 cols on desktop) */}
+            <div className="md:col-span-2 space-y-4 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                  <h4 className="text-xs font-bold text-blue-900 mb-1 font-mono uppercase">
+                    ADVANCING TO STAGE {milestoneUpdate.milestoneIndex + 1}: {MILESTONES[milestoneUpdate.milestoneIndex].name}
+                  </h4>
+                  <p className="text-xs text-blue-700 leading-normal">
+                    This selection advances the customer timeline. It generates simulated dispatch security email to <strong>shipplixservices@gmail.com</strong> and WhatsApp API updates to the consignee phone contact.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-baseline">
+                    <label className="text-[11px] font-mono font-bold text-gray-500 block uppercase">
+                      Custom Transit Stage Description
+                    </label>
+                    <button
+                      id="btn-reset-descr"
+                      type="button"
+                      onClick={() => setMilestoneUpdate({
+                        ...milestoneUpdate,
+                        customDescription: MILESTONES[milestoneUpdate.milestoneIndex].description
+                      })}
+                      className="text-blue-700 hover:underline text-[10px] font-bold"
+                    >
+                      Reset to Default Template
+                    </button>
+                  </div>
+                  <textarea
+                    id="textarea-custom-desc"
+                    rows={4}
+                    value={milestoneUpdate.customDescription}
+                    onChange={(e) => setMilestoneUpdate({ ...milestoneUpdate, customDescription: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg p-2.5 text-xs sm:text-sm"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("fleet")}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 rounded-lg text-xs font-bold transition-all"
+                >
+                  Return to Fleet
+                </button>
+                <button
+                  id="btn-update-stage"
+                  type="submit"
+                  disabled={actionLoading === "milestone"}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 rounded-lg text-xs font-black transition-all flex items-center space-x-2 shadow-md"
+                >
+                  {actionLoading === "milestone" ? (
+                    <RefreshCw className="h-4.5 w-4.5 animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      <span>Dispatch Status Update</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+          </form>
+        </div>
       )}
 
       {/* 4. Security & Backups Panel */}
@@ -1737,9 +1894,9 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
 
               <button
                 id="btn-trigger-backup-now"
-                onClick={triggerBackup}
+                onClick={handleTriggerBackup}
                 disabled={actionLoading === "backup"}
-                className="bg-[#032B73] hover:bg-blue-900 text-[#FFD700] font-black text-xs px-4 py-2.5 rounded-lg transition-all flex items-center justify-center space-x-1.5 shadow text-center"
+                className="bg-[#032B73] hover:bg-blue-900 text-[#FFD700] font-black text-xs px-4 py-2.5 rounded-lg transition-all flex items-center space-x-1.5 shadow"
               >
                 {actionLoading === "backup" ? <RefreshCw className="h-4 w-4 animate-spin" /> : <span>Execute Snapshot Backup</span>}
               </button>
@@ -1791,372 +1948,6 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
             </div>
           </div>
 
-        </div>
-      )}
-
-      {/* 4. Business Settings Panel */}
-      {activeTab === "settings" && (
-        <div className="animate-[fadeIn_0.2s_ease-out]">
-          <SettingsModule 
-            showSystemMessage={showSystemMessage}
-          />
-        </div>
-      )}
-
-      {/* 5. Notification Center Panel */}
-      {activeTab === "notifications" && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6 animate-[fadeIn_0.2s_ease-out]" id="full-notif-panel">
-          {/* Header Area */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-2 border-b border-gray-100">
-            <div>
-              <h3 className="text-lg font-extrabold text-[#032B73] uppercase tracking-wider font-mono flex items-center">
-                <Bell className="h-5 w-5 mr-2 text-blue-800" />
-                Notification Center
-              </h3>
-              <p className="text-xs text-gray-500">
-                Centralized ledger of system-wide administrative triggers, operational warnings, and transactional log entries.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={async () => {
-                  try {
-                    const updated = await shipmentService.markAllNotificationsAsRead();
-                    setNotifications(updated);
-                    setUnreadNotificationsCount(0);
-                    showSystemMessage("success", "All notifications marked as read.");
-                  } catch (err) {
-                    showSystemMessage("error", "Failed to update notification states.");
-                  }
-                }}
-                className="bg-blue-50 hover:bg-blue-100 text-[#032B73] px-3.5 py-2 rounded-lg text-xs font-bold border border-blue-200 transition-all flex items-center space-x-1.5"
-              >
-                <CheckCircle className="h-3.5 w-3.5" />
-                <span>Mark All Read</span>
-              </button>
-
-              <button
-                onClick={async () => {
-                  if (window.confirm("Are you sure you want to permanently delete all notification records? This action cannot be undone.")) {
-                    try {
-                      await shipmentService.clearAllNotifications();
-                      setNotifications([]);
-                      setUnreadNotificationsCount(0);
-                      showSystemMessage("success", "Notification history cleared successfully.");
-                    } catch (err) {
-                      showSystemMessage("error", "Failed to clear notifications.");
-                    }
-                  }
-                }}
-                className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3.5 py-2 rounded-lg text-xs font-bold border border-rose-200 transition-all flex items-center space-x-1.5"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                <span>Clear History</span>
-              </button>
-
-              <button
-                onClick={async () => {
-                  try {
-                    await shipmentService.simulateSystemError();
-                    fetchAdminNotifications();
-                    showSystemMessage("success", "Fired automated Database Timeout simulation.");
-                  } catch (err) {
-                    showSystemMessage("error", "Simulation failed.");
-                  }
-                }}
-                className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-3.5 py-2 rounded-lg text-xs font-bold border border-amber-200 transition-all flex items-center space-x-1.5"
-              >
-                <AlertTriangle className="h-3.5 w-3.5" />
-                <span>Simulate Error</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Filter and Control Sidebar */}
-            <div className="space-y-4">
-              <div className="bg-slate-50 border border-gray-150 rounded-xl p-4 space-y-4">
-                <span className="text-[10px] text-slate-400 font-mono block uppercase font-bold tracking-wide">
-                  Query & Filter Engine
-                </span>
-
-                {/* Text Search */}
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search tracking #, name..."
-                    value={notificationSearch}
-                    onChange={(e) => setNotificationSearch(e.target.value)}
-                    className="w-full bg-white pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
-                  />
-                  {notificationSearch && (
-                    <button
-                      onClick={() => setNotificationSearch("")}
-                      className="absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Type Selection List */}
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-500 font-bold block mb-2 uppercase">
-                    Select Event Type
-                  </span>
-                  {[
-                    { value: "all", label: "All Alerts", color: "border-l-gray-400" },
-                    { value: "payment_outstanding", label: "Payment Outstanding", color: "border-l-emerald-500" },
-                    { value: "shipment_delayed", label: "Shipment Delayed", color: "border-l-amber-500" },
-                    { value: "shipment_delivered", label: "Shipment Delivered", color: "border-l-green-500" },
-                    { value: "customer_created", label: "Customer Created", color: "border-l-blue-500" },
-                    { value: "shipment_updated", label: "Shipment Updated", color: "border-l-indigo-500" },
-                    { value: "admin_login", label: "Admin Login", color: "border-l-slate-800" },
-                    { value: "system_error", label: "System Errors", color: "border-l-rose-500" }
-                  ].map((filterItem) => (
-                    <button
-                      key={filterItem.value}
-                      onClick={() => setNotificationFilter(filterItem.value)}
-                      className={`w-full text-left px-3 py-2 text-xs rounded-md border-l-3 font-semibold transition-all flex justify-between items-center ${
-                        notificationFilter === filterItem.value
-                          ? "bg-blue-50 border border-blue-200 text-blue-900 border-l-blue-700"
-                          : "border border-gray-150 hover:bg-slate-100 text-slate-600 " + filterItem.color
-                      }`}
-                    >
-                      <span>{filterItem.label}</span>
-                      <span className="text-[10px] text-gray-400 font-mono">
-                        {filterItem.value === "all" 
-                          ? notifications.length 
-                          : notifications.filter(n => n.type === filterItem.value).length
-                        }
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Status statistics summary */}
-              <div className="bg-blue-950 text-white rounded-xl p-4 space-y-3 font-mono text-[11px] leading-relaxed">
-                <span className="text-[9px] text-blue-300 block uppercase font-bold tracking-wider">
-                  Operational Health Metrics
-                </span>
-                <div className="space-y-1.5 divide-y divide-blue-900">
-                  <div className="flex justify-between py-1">
-                    <span>Unread Alerts:</span>
-                    <span className="text-rose-400 font-bold">{unreadNotificationsCount}</span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span>Outstanding Payments:</span>
-                    <span className="text-emerald-400 font-bold">
-                      {notifications.filter(n => n.type === "payment_outstanding").length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span>Active Delays:</span>
-                    <span className="text-amber-400 font-bold">
-                      {notifications.filter(n => n.type === "shipment_delayed").length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span>Crashes & Exceptions:</span>
-                    <span className="text-rose-400 font-bold">
-                      {notifications.filter(n => n.type === "system_error").length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* List and Cards View Area */}
-            <div className="lg:col-span-3 space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-[11px] text-gray-500 font-bold">
-                  Showing {filteredNotifications.length} of {notifications.length} matching events
-                </span>
-              </div>
-
-              {filteredNotifications.length === 0 ? (
-                <div className="bg-slate-50 border border-gray-150 rounded-xl p-12 text-center space-y-3">
-                  <Bell className="h-10 w-10 text-gray-400 mx-auto stroke-1" />
-                  <p className="text-sm font-bold text-gray-600">No matching system logs found.</p>
-                  <p className="text-xs text-gray-400">
-                    Try adjusting your filters or triggering manual updates in status fields.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredNotifications.map((notif) => {
-                    const getIcon = () => {
-                      switch (notif.type) {
-                        case "payment_outstanding":
-                          return <DollarSign className="h-5 w-5 text-emerald-600" />;
-                        case "shipment_delayed":
-                          return <AlertTriangle className="h-5 w-5 text-amber-600" />;
-                        case "shipment_delivered":
-                          return <CheckCircle className="h-5 w-5 text-green-600" />;
-                        case "customer_created":
-                          return <UserPlus className="h-5 w-5 text-blue-600" />;
-                        case "shipment_updated":
-                          return <RefreshCw className="h-5 w-5 text-indigo-600" />;
-                        case "admin_login":
-                          return <Shield className="h-5 w-5 text-indigo-800" />;
-                        case "system_error":
-                          return <ShieldAlert className="h-5 w-5 text-rose-600" />;
-                        default:
-                          return <Info className="h-5 w-5 text-gray-600" />;
-                      }
-                    };
-
-                    const getBg = () => {
-                      switch (notif.type) {
-                        case "payment_outstanding": return "bg-emerald-50 border-emerald-100";
-                        case "shipment_delayed": return "bg-amber-50 border-amber-100";
-                        case "shipment_delivered": return "bg-green-50 border-green-100";
-                        case "customer_created": return "bg-blue-50 border-blue-100";
-                        case "shipment_updated": return "bg-indigo-50 border-indigo-100";
-                        case "admin_login": return "bg-slate-50 border-slate-100";
-                        case "system_error": return "bg-rose-50 border-rose-100";
-                        default: return "bg-gray-50 border-gray-100";
-                      }
-                    };
-
-                    return (
-                      <div
-                        key={notif.id}
-                        className={`border rounded-xl p-4 transition-all hover:shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
-                          !notif.read ? "bg-blue-50/20 border-blue-200" : "bg-white border-gray-200"
-                        }`}
-                      >
-                        <div className="flex items-start space-x-4 min-w-0 flex-1">
-                          <div className={`p-2.5 rounded-xl border shrink-0 ${getBg()}`}>
-                            {getIcon()}
-                          </div>
-                          
-                          <div className="space-y-1 min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider text-[9px] ${
-                                notif.type === "system_error" ? "bg-rose-100 text-rose-700 font-bold" :
-                                notif.type === "payment_outstanding" ? "bg-emerald-100 text-emerald-700 font-bold" :
-                                "bg-gray-100 text-gray-700"
-                              }`}>
-                                {notif.type.replace('_', ' ')}
-                              </span>
-                              <span className="text-[10px] text-gray-400 font-mono">
-                                {new Date(notif.timestamp).toLocaleString()}
-                              </span>
-                            </div>
-
-                            <h4 className="text-sm font-extrabold text-slate-800 leading-tight">
-                              {notif.title}
-                            </h4>
-
-                            <p className="text-xs text-slate-600 leading-relaxed max-w-xl">
-                              {notif.message}
-                            </p>
-
-                            {/* Meta payloads */}
-                            {notif.meta && Object.keys(notif.meta).length > 0 && (
-                              <div className="flex flex-wrap gap-2 pt-1">
-                                {notif.meta.trackingNumber && (
-                                  <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono text-[10px] border border-slate-200 font-bold">
-                                    TRACK: {notif.meta.trackingNumber}
-                                  </span>
-                                )}
-                                {notif.meta.balance !== undefined && (
-                                  <span className="bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-mono text-[10px] border border-rose-200 font-bold">
-                                    BAL OUTSTANDING: ${notif.meta.balance.toFixed(2)}
-                                  </span>
-                                )}
-                                {notif.meta.email && (
-                                  <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-mono text-[10px] border border-indigo-200 font-bold">
-                                    USER: {notif.meta.email}
-                                  </span>
-                                )}
-                                {notif.meta.shipmentHealth && (
-                                  <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-mono text-[10px] border border-amber-200 uppercase font-bold">
-                                    HEALTH: {notif.meta.shipmentHealth}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Card Actions */}
-                        <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center w-full md:w-auto pt-3 md:pt-0 border-t md:border-0 border-gray-100 gap-2 shrink-0">
-                          <div className="flex gap-2">
-                            {!notif.read && (
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    const updated = await shipmentService.markNotificationAsRead(notif.id);
-                                    setNotifications(prev => prev.map(n => n.id === notif.id ? updated : n));
-                                    setUnreadNotificationsCount(prev => Math.max(0, prev - 1));
-                                  } catch (err) {
-                                    console.error(err);
-                                  }
-                                }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-xs"
-                              >
-                                Mark Read
-                              </button>
-                            )}
-
-                            {notif.meta?.trackingNumber && (
-                              <button
-                                onClick={() => {
-                                  const tracking = notif.meta.trackingNumber;
-                                  const matched = shipments.find(s => s.trackingNumber.toUpperCase() === tracking.toUpperCase());
-                                  if (matched) {
-                                    setSelectedShipment(matched);
-                                    setActiveTab("update");
-                                  } else {
-                                    showSystemMessage("error", `Shipment ${tracking} no longer exists.`);
-                                  }
-                                }}
-                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border border-indigo-200 transition-all flex items-center space-x-1"
-                              >
-                                <span>Inspect Fleet</span>
-                                <ExternalLink className="h-3 w-3" />
-                              </button>
-                            )}
-
-                            <button
-                              onClick={async () => {
-                                try {
-                                  await shipmentService.deleteNotification(notif.id);
-                                  setNotifications(prev => prev.filter(n => n.id !== notif.id));
-                                  if (!notif.read) {
-                                    setUnreadNotificationsCount(prev => Math.max(0, prev - 1));
-                                  }
-                                  showSystemMessage("success", "Notification deleted.");
-                                } catch (err) {
-                                  showSystemMessage("error", "Failed to delete notification.");
-                                }
-                              }}
-                              className="text-gray-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition-all"
-                              title="Delete notification"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. Admin Audit Ledger Panel */}
-      {activeTab === "audit" && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 animate-[fadeIn_0.2s_ease-out]" id="audit-logs-panel">
-          <AuditLogModule />
         </div>
       )}
 

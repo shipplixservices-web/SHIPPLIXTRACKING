@@ -11,7 +11,7 @@ interface ShipplixLogoProps {
 export default function ShipplixLogo({
   variant = "horizontal",
   size = "md",
-  textColor = "text-brand-blue",
+  textColor = "text-[#032B73]",
   className = "",
 }: ShipplixLogoProps) {
   if (variant === "icon") {
@@ -44,7 +44,7 @@ export default function ShipplixLogo({
       </span>
 
       {/* Slogan: THINK SHIPPING THINK SHIPPLIX */}
-      <p className="text-brand-danger font-black text-sm sm:text-lg tracking-wider uppercase leading-tight font-sans mt-1">
+      <p className="text-red-600 font-black text-sm sm:text-lg tracking-wider uppercase leading-tight font-sans mt-1">
         THINK SHIPPING THINK SHIPPLIX
       </p>
 
@@ -53,9 +53,9 @@ export default function ShipplixLogo({
         href="https://wa.me/2349168273513" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="text-brand-blue hover:text-brand-blue-dark transition-all duration-200 font-bold text-sm sm:text-base mt-3 bg-brand-yellow hover:bg-brand-yellow-dark px-5 py-2.5 rounded-full border border-brand-yellow shadow-md inline-flex items-center gap-2 select-none"
+        className="text-[#032B73] hover:text-[#032B73]/90 transition-all duration-200 font-bold text-sm sm:text-base mt-3 bg-[#FFD700] hover:bg-[#FFD700]/90 px-5 py-2.5 rounded-full border border-[#FFD700] shadow-md inline-flex items-center gap-2 select-none"
       >
-        <MessageSquare className="h-4 w-4 text-brand-blue" />
+        <MessageSquare className="h-4 w-4 text-[#032B73]" />
         <span>Contact us on WhatsApp</span>
       </a>
     </div>
