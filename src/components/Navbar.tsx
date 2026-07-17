@@ -8,7 +8,7 @@ interface NavbarProps {
 
 export default function Navbar({ currentView, onViewChange }: NavbarProps) {
   return (
-    <header className="bg-[#032B73] text-white shadow-md border-b-4 border-[#FFD700]">
+    <header className="bg-brand-blue text-white shadow-md border-b-4 border-brand-yellow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo and Branding */}
@@ -21,7 +21,7 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
                 <span className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-none select-none">
                   Shipplix
                 </span>
-                <span className="text-[9px] font-bold text-[#FFD700] tracking-widest uppercase mt-1">
+                <span className="text-[9px] font-bold text-brand-yellow tracking-widest uppercase mt-1">
                   Think Shipping Think Shipplix
                 </span>
               </div>
@@ -35,7 +35,7 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
               onClick={() => onViewChange("customer")}
               className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 currentView === "customer"
-                  ? "bg-[#FFD700] text-[#032B73] font-bold shadow-md scale-102"
+                  ? "bg-brand-yellow text-brand-blue hover:bg-brand-yellow-dark font-bold shadow-md scale-102"
                   : "text-white hover:bg-white/10"
               }`}
             >

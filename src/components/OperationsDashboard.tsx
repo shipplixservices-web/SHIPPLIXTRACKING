@@ -16,6 +16,7 @@ interface OperationsDashboardProps {
 }
 
 import { parseShipmentNotesAndFinance } from "../utils/financeUtils.ts";
+import { formatCurrency, formatCurrencyShort, getCurrencySymbol } from "../utils/currencyUtils.ts";
 
 // 1. Unified Financial Formula Helper
 export function calculateShipmentFinancials(shipment: Shipment) {
@@ -31,6 +32,7 @@ export function calculateShipmentFinancials(shipment: Shipment) {
 }
 
 export default function OperationsDashboard({ shipments, loading, onSelectShipment }: OperationsDashboardProps) {
+  const symbol = getCurrencySymbol();
   const [selectedActivityFilter, setSelectedActivityFilter] = useState<"all" | "milestone" | "paused">("all");
 
   // 2. High-Performance Statistics Rollup (Optimized with useMemo + D3)
@@ -360,7 +362,7 @@ export default function OperationsDashboard({ shipments, loading, onSelectShipme
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[11px] text-gray-400 font-mono block uppercase tracking-wider">Revenue</span>
-            <p className="text-3xl font-black text-[#032B73] font-mono">${stats.revenue.toLocaleString()}</p>
+            <p className="text-3xl font-black text-[#032B73] font-mono">{formatCurrencyShort(stats.revenue)}</p>
             <span className="text-[10px] text-slate-500">Gross billing charges</span>
           </div>
           <div className="p-3 bg-blue-50 text-[#032B73] rounded-xl">
@@ -372,7 +374,7 @@ export default function OperationsDashboard({ shipments, loading, onSelectShipme
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[11px] text-gray-400 font-mono block uppercase tracking-wider">Expenses</span>
-            <p className="text-3xl font-black text-gray-600 font-mono">${stats.expenses.toLocaleString()}</p>
+            <p className="text-3xl font-black text-gray-600 font-mono">{formatCurrencyShort(stats.expenses)}</p>
             <span className="text-[10px] text-slate-400 font-medium">Ops, Customs & Freight cost</span>
           </div>
           <div className="p-3 bg-gray-50 text-gray-500 rounded-xl">
@@ -384,7 +386,7 @@ export default function OperationsDashboard({ shipments, loading, onSelectShipme
         <div className="bg-white p-5 rounded-2xl border border-[#FFD700]/30 shadow-xs flex items-center justify-between border-l-4">
           <div className="space-y-1">
             <span className="text-[11px] text-[#032B73] font-mono font-bold block uppercase tracking-wider">Net Profit</span>
-            <p className="text-3xl font-black text-emerald-600 font-mono">${stats.profit.toLocaleString()}</p>
+            <p className="text-3xl font-black text-emerald-600 font-mono">{formatCurrencyShort(stats.profit)}</p>
             <span className="text-[10px] text-emerald-600 font-semibold">
               Margin: {stats.revenue > 0 ? Math.round((stats.profit / stats.revenue) * 100) : 0}%
             </span>
@@ -407,7 +409,7 @@ export default function OperationsDashboard({ shipments, loading, onSelectShipme
           <div className="space-y-1 flex-grow">
             <span className="text-xs font-mono text-amber-800 font-bold uppercase block tracking-wider">Outstanding Accounts Receivable</span>
             <h4 className="text-2xl font-black text-amber-900 font-mono">
-              ${stats.pendingPayments.toLocaleString()}
+              {formatCurrencyShort(stats.pendingPayments)}
             </h4>
             <p className="text-xs text-amber-700 leading-normal">
               Accumulated outstanding billing fees from <strong>{stats.pendingPaymentsCount} shipments</strong> currently flagged on <strong>"Payment Pending"</strong> transit hold. Release packages only after full clearance settlement.
@@ -473,11 +475,12 @@ export default function OperationsDashboard({ shipments, loading, onSelectShipme
                     fontSize: '11px',
                     fontFamily: 'monospace'
                   }} 
+                  formatter={(value: any, name: any) => [formatCurrencyShort(Number(value)), name]}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
-                <Area type="monotone" dataKey="Revenue ($)" stroke="#032B73" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRev)" />
-                <Area type="monotone" dataKey="Profit ($)" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorProfit)" />
-                <Area type="monotone" dataKey="Expenses ($)" stroke="#94A3B8" strokeWidth={1.5} fill="none" strokeDasharray="5 5" />
+                <Area name={`Revenue (${symbol})`} type="monotone" dataKey="Revenue ($)" stroke="#032B73" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRev)" />
+                <Area name={`Profit (${symbol})`} type="monotone" dataKey="Profit ($)" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorProfit)" />
+                <Area name={`Expenses (${symbol})`} type="monotone" dataKey="Expenses ($)" stroke="#94A3B8" strokeWidth={1.5} fill="none" strokeDasharray="5 5" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -514,7 +517,7 @@ export default function OperationsDashboard({ shipments, loading, onSelectShipme
                     color: '#fff', 
                     fontSize: '11px' 
                   }} 
-                  formatter={(value, name, props: any) => [`${value} parcels ($${props.payload.revenue.toLocaleString()})`, name]}
+                  formatter={(value, name, props: any) => [`${value} parcels (${formatCurrencyShort(props.payload.revenue)})`, name]}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -605,9 +608,9 @@ export default function OperationsDashboard({ shipments, loading, onSelectShipme
                 </div>
 
                 <div className="text-right">
-                  <p className="text-xs font-black text-[#032B73] font-mono">${cust.revenue.toLocaleString()}</p>
+                  <p className="text-xs font-black text-[#032B73] font-mono">{formatCurrencyShort(cust.revenue)}</p>
                   <p className="text-[10px] text-emerald-600 font-bold font-mono">
-                    {cust.totalShipments} {cust.totalShipments === 1 ? "parcel" : "parcels"} • ${cust.profit.toLocaleString()} Net
+                    {cust.totalShipments} {cust.totalShipments === 1 ? "parcel" : "parcels"} • {formatCurrencyShort(cust.profit)} Net
                   </p>
                 </div>
               </div>

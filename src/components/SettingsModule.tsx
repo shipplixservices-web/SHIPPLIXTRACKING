@@ -7,6 +7,7 @@ import {
 import { 
   AppSettings, getAppSettings, saveAppSettings, DEFAULT_SETTINGS, AdminAccount, RolePermissions 
 } from "../utils/settingsUtils.ts";
+import { getCurrencySymbol } from "../utils/currencyUtils.ts";
 
 interface SettingsModuleProps {
   showSystemMessage?: (msg: string, type: "success" | "error" | "info") => void;
@@ -239,7 +240,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
       {/* HEADER BAR */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
         <div className="flex items-center space-x-3">
-          <div className="bg-[#032B73]/10 p-2.5 rounded-xl text-[#032B73]">
+          <div className="bg-brand-blue/10 p-2.5 rounded-xl text-brand-blue">
             <Settings className="h-5 w-5 animate-spin-slow" />
           </div>
           <div>
@@ -263,7 +264,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
           
           <button
             onClick={handleSave}
-            className="flex items-center space-x-1.5 py-2 px-4 bg-[#032B73] hover:bg-blue-900 text-white rounded-xl text-xs font-mono font-bold shadow-sm transition-all"
+            className="flex items-center space-x-1.5 py-2 px-4 bg-brand-blue hover:bg-brand-blue-dark text-white rounded-xl text-xs font-mono font-bold shadow-sm transition-all"
           >
             <Save className="h-3.5 w-3.5" />
             <span>Save Configuration</span>
@@ -289,7 +290,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
             onClick={() => setActiveSection("company")}
             className={`w-full flex items-center space-x-2.5 py-3 px-4 rounded-xl text-xs font-mono font-bold transition-all text-left ${
               activeSection === "company" 
-                ? "bg-[#032B73] text-white" 
+                ? "bg-brand-blue text-white" 
                 : "text-slate-600 hover:bg-slate-100"
             }`}
           >
@@ -301,7 +302,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
             onClick={() => setActiveSection("pricing")}
             className={`w-full flex items-center space-x-2.5 py-3 px-4 rounded-xl text-xs font-mono font-bold transition-all text-left ${
               activeSection === "pricing" 
-                ? "bg-[#032B73] text-white" 
+                ? "bg-brand-blue text-white" 
                 : "text-slate-600 hover:bg-slate-100"
             }`}
           >
@@ -313,7 +314,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
             onClick={() => setActiveSection("admins")}
             className={`w-full flex items-center space-x-2.5 py-3 px-4 rounded-xl text-xs font-mono font-bold transition-all text-left ${
               activeSection === "admins" 
-                ? "bg-[#032B73] text-white" 
+                ? "bg-brand-blue text-white" 
                 : "text-slate-600 hover:bg-slate-100"
             }`}
           >
@@ -325,7 +326,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
             onClick={() => setActiveSection("system")}
             className={`w-full flex items-center space-x-2.5 py-3 px-4 rounded-xl text-xs font-mono font-bold transition-all text-left ${
               activeSection === "system" 
-                ? "bg-[#032B73] text-white" 
+                ? "bg-brand-blue text-white" 
                 : "text-slate-600 hover:bg-slate-100"
             }`}
           >
@@ -336,7 +337,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
           <div className="p-4 mt-8 bg-slate-100/50 rounded-xl border border-slate-200/50 text-[10px] text-slate-500 font-mono space-y-2">
             <span className="font-bold text-slate-700 block uppercase">Scope Rules:</span>
             <p>Every field on this panel is fully reactive. Changes alter the math used in new shipment creation.</p>
-            <p className="text-[#032B73] font-bold">● Active Theme: {settings.theme.themeName}</p>
+            <p className="text-brand-blue font-bold">● Active Theme: {settings.theme.themeName}</p>
           </div>
         </div>
 
@@ -603,7 +604,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                     <span className="font-bold text-amber-800 block text-[10px] uppercase">⚡ EXPRESS CARGO</span>
                     <div className="space-y-2">
                       <div>
-                        <label className="text-[9px] text-slate-500">Base Cost ($)</label>
+                        <label className="text-[9px] text-slate-500">Base Cost ({getCurrencySymbol()})</label>
                         <input
                           type="number"
                           value={settings.rates.expressBase}
@@ -615,7 +616,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] text-slate-500">Per KG Weight Rate ($)</label>
+                        <label className="text-[9px] text-slate-500">Per KG Weight Rate ({getCurrencySymbol()})</label>
                         <input
                           type="number"
                           value={settings.rates.expressPerKg}
@@ -634,7 +635,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                     <span className="font-bold text-slate-700 block text-[10px] uppercase">📦 STANDARD CARGO</span>
                     <div className="space-y-2">
                       <div>
-                        <label className="text-[9px] text-slate-500">Base Cost ($)</label>
+                        <label className="text-[9px] text-slate-500">Base Cost ({getCurrencySymbol()})</label>
                         <input
                           type="number"
                           value={settings.rates.standardBase}
@@ -646,7 +647,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] text-slate-500">Per KG Weight Rate ($)</label>
+                        <label className="text-[9px] text-slate-500">Per KG Weight Rate ({getCurrencySymbol()})</label>
                         <input
                           type="number"
                           value={settings.rates.standardPerKg}
@@ -665,7 +666,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                     <span className="font-bold text-emerald-800 block text-[10px] uppercase">🌱 ECONOMY SEA-FREIGHT</span>
                     <div className="space-y-2">
                       <div>
-                        <label className="text-[9px] text-slate-500">Base Cost ($)</label>
+                        <label className="text-[9px] text-slate-500">Base Cost ({getCurrencySymbol()})</label>
                         <input
                           type="number"
                           value={settings.rates.economyBase}
@@ -677,7 +678,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] text-slate-500">Per KG Weight Rate ($)</label>
+                        <label className="text-[9px] text-slate-500">Per KG Weight Rate ({getCurrencySymbol()})</label>
                         <input
                           type="number"
                           value={settings.rates.economyPerKg}
@@ -696,7 +697,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
               {/* Default Accessory Charges */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-4">
                 <div className="border-b border-gray-100 pb-3 flex items-center space-x-2">
-                  <Scale className="h-4.5 w-4.5 text-[#032B73]" />
+                  <Scale className="h-4.5 w-4.5 text-brand-blue" />
                   <h4 className="text-xs font-bold font-mono text-gray-900 uppercase tracking-wide">
                     Accessory Logistics Surcharges & Sizing Defaults
                   </h4>
@@ -704,7 +705,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
 
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs font-mono">
                   <div className="space-y-1">
-                    <label className="font-bold text-gray-400 block text-[9px] uppercase">Packaging Fee ($/pkg)</label>
+                    <label className="font-bold text-gray-400 block text-[9px] uppercase">Packaging Fee ({getCurrencySymbol()}/pkg)</label>
                     <input
                       type="number"
                       value={settings.charges.packagingPerPackage}
@@ -717,7 +718,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                   </div>
 
                   <div className="space-y-1">
-                    <label className="font-bold text-gray-400 block text-[9px] uppercase">Terminal Pickup Fee ($)</label>
+                    <label className="font-bold text-gray-400 block text-[9px] uppercase">Terminal Pickup Fee ({getCurrencySymbol()})</label>
                     <input
                       type="number"
                       value={settings.charges.pickupFee}
@@ -743,7 +744,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                   </div>
 
                   <div className="space-y-1">
-                    <label className="font-bold text-gray-400 block text-[9px] uppercase">Customs Surcharge ($)</label>
+                    <label className="font-bold text-gray-400 block text-[9px] uppercase">Customs Surcharge ({getCurrencySymbol()})</label>
                     <input
                       type="number"
                       value={settings.charges.customsCharge}
@@ -756,7 +757,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                   </div>
 
                   <div className="col-span-2 md:col-span-1 space-y-1">
-                    <label className="font-bold text-gray-400 block text-[9px] uppercase">Handling Surcharges ($)</label>
+                    <label className="font-bold text-gray-400 block text-[9px] uppercase">Handling Surcharges ({getCurrencySymbol()})</label>
                     <input
                       type="number"
                       value={settings.charges.handlingSurcharges}
@@ -824,7 +825,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                       />
                       <button
                         onClick={handleAddCurrency}
-                        className="bg-[#032B73] hover:bg-blue-900 text-white px-2.5 rounded-lg text-xs font-mono font-bold"
+                        className="bg-brand-blue hover:bg-brand-blue-dark text-white px-2.5 rounded-lg text-xs font-mono font-bold"
                       >
                         + Add
                       </button>
@@ -864,7 +865,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                       />
                       <button
                         onClick={handleAddOrigin}
-                        className="bg-[#032B73] hover:bg-blue-900 text-white px-2.5 rounded-lg text-xs font-mono font-bold"
+                        className="bg-brand-blue hover:bg-brand-blue-dark text-white px-2.5 rounded-lg text-xs font-mono font-bold"
                       >
                         + Add
                       </button>
@@ -876,7 +877,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                 <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs space-y-4">
                   <div className="border-b border-gray-100 pb-2 flex items-center justify-between">
                     <span className="text-xs font-bold font-mono uppercase text-gray-800">Supported Destinations</span>
-                    <Globe className="h-4 w-4 text-[#032B73]" />
+                    <Globe className="h-4 w-4 text-brand-blue" />
                   </div>
 
                   <div className="space-y-3 text-xs font-mono">
@@ -904,7 +905,7 @@ export default function SettingsModule({ showSystemMessage }: SettingsModuleProp
                       />
                       <button
                         onClick={handleAddDest}
-                        className="bg-[#032B73] hover:bg-blue-900 text-white px-2.5 rounded-lg text-xs font-mono font-bold"
+                        className="bg-brand-blue hover:bg-brand-blue-dark text-white px-2.5 rounded-lg text-xs font-mono font-bold"
                       >
                         + Add
                       </button>

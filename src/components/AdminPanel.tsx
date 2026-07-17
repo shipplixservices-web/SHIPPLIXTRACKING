@@ -2,11 +2,12 @@ import React, { useState, useEffect, useMemo } from "react";
 import { 
   Shield, Key, LayoutDashboard, Plus, Eye, Edit2, Trash2, Pause, Play, Download, Search, 
   MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, CheckCircle2, Sliders, Database, Save, LogOut, Receipt,
-  FileText, Settings
+  FileText, Settings, Bell, AlertTriangle, UserPlus, DollarSign, ShieldAlert, CheckCircle, Info, Clock, ExternalLink, X, History
 } from "lucide-react";
-import { Shipment, MILESTONES } from "../types.js";
+import { Shipment, MILESTONES, AdminNotification } from "../types.js";
 import ShipplixLogo from "./ShipplixLogo.tsx";
 import { authService, AdminUser } from "../services/authService.ts";
+import { shipmentService } from "../services/shipmentService.ts";
 import { useShipments } from "../hooks/useShipments.ts";
 import { exportShipmentsToCSV } from "../utils/csvUtils.ts";
 import OperationsDashboard from "./OperationsDashboard.tsx";
@@ -15,6 +16,7 @@ import ReportsModule from "./ReportsModule.tsx";
 import SettingsModule from "./SettingsModule.tsx";
 import { getAppSettings } from "../utils/settingsUtils.ts";
 import { ShipmentManagementHub } from "./ShipmentManagementHub.tsx";
+import AuditLogModule from "./AuditLogModule.tsx";
 
 interface AdminPanelProps {
   onTrackingRequest: (trackingNumber: string) => void;
@@ -70,9 +72,55 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
   } = useShipments(isAuthenticated);
 
   // Component local states for UI Navigation & Forms
-  const [activeTab, setActiveTab] = useState<"dashboard" | "finance" | "reports" | "fleet" | "add" | "update" | "backups" | "settings">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "finance" | "reports" | "fleet" | "add" | "update" | "backups" | "settings" | "notifications" | "audit">("dashboard");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [editingShipment, setEditingShipment] = useState<Shipment | null>(null);
+
+  // Admin Notification Center States
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [notificationFilter, setNotificationFilter] = useState<string>("all");
+  const [notificationSearch, setNotificationSearch] = useState<string>("");
+
+  const filteredNotifications = useMemo(() => {
+    let list = [...notifications];
+    
+    // Filter by Type
+    if (notificationFilter !== "all") {
+      list = list.filter(n => n.type === notificationFilter);
+    }
+    
+    // Search
+    const search = notificationSearch.trim().toLowerCase();
+    if (search) {
+      list = list.filter(n => 
+        n.title.toLowerCase().includes(search) || 
+        n.message.toLowerCase().includes(search) ||
+        (n.meta?.trackingNumber && n.meta.trackingNumber.toLowerCase().includes(search))
+      );
+    }
+    
+    return list;
+  }, [notifications, notificationFilter, notificationSearch]);
+
+  const fetchAdminNotifications = async () => {
+    try {
+      const data = await shipmentService.fetchNotifications();
+      setNotifications(data);
+      setUnreadNotificationsCount(data.filter((n: any) => !n.read).length);
+    } catch (err) {
+      console.error("Failed to fetch admin notifications:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAdminNotifications();
+      const interval = setInterval(fetchAdminNotifications, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
 
   // Global Command Search States
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
@@ -251,6 +299,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
         portGateway: ""
       });
       setActiveTab("fleet");
+      fetchAdminNotifications();
     }
   };
 
@@ -265,6 +314,7 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
         setSelectedShipment(editingShipment);
       }
       setEditingShipment(null);
+      fetchAdminNotifications();
     }
   };
 
@@ -276,22 +326,29 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
     const updated = await updateMilestone(selectedShipment, milestoneUpdate.milestoneIndex, milestoneUpdate.customDescription);
     if (updated) {
       setSelectedShipment(updated);
+      fetchAdminNotifications();
     }
   };
 
   // Delete Action
   const handleDeleteAction = async (trackingNumber: string) => {
     const success = await deleteShipment(trackingNumber);
-    if (success && selectedShipment?.trackingNumber === trackingNumber) {
-      setSelectedShipment(null);
+    if (success) {
+      if (selectedShipment?.trackingNumber === trackingNumber) {
+        setSelectedShipment(null);
+      }
+      fetchAdminNotifications();
     }
   };
 
   // Hold / Resume Toggle Action
   const handlePauseToggleAction = async (shipment: Shipment) => {
     const updated = await togglePauseStatus(shipment);
-    if (updated && selectedShipment?.trackingNumber === shipment.trackingNumber) {
-      setSelectedShipment(updated);
+    if (updated) {
+      if (selectedShipment?.trackingNumber === shipment.trackingNumber) {
+        setSelectedShipment(updated);
+      }
+      fetchAdminNotifications();
     }
   };
 
@@ -405,14 +462,218 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
           </p>
         </div>
 
-        <button
-          id="admin-logout-btn"
-          onClick={handleLogout}
-          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5"
-        >
-          <LogOut className="h-4 w-4" />
-          <span>Sign Out Session</span>
-        </button>
+        <div className="flex items-center space-x-3 self-stretch sm:self-auto justify-end">
+          {/* Notification Center Popover Trigger */}
+          <div className="relative">
+            <button
+              id="admin-notif-bell"
+              onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+              className={`p-2.5 rounded-lg border transition-all relative flex items-center justify-center ${
+                showNotificationsDropdown 
+                  ? "bg-blue-50 border-blue-200 text-[#032B73]" 
+                  : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              <Bell className={`h-5 w-5 ${unreadNotificationsCount > 0 ? "animate-bounce" : ""}`} />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-mono font-black text-[9px] h-5 w-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                  {unreadNotificationsCount}
+                </span>
+              )}
+            </button>
+
+            {showNotificationsDropdown && (
+              <div 
+                id="notif-dropdown-menu" 
+                className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl border border-gray-200 shadow-xl z-50 overflow-hidden text-slate-700 animate-in fade-in slide-in-from-top-3 duration-200"
+              >
+                {/* Dropdown Header */}
+                <div className="p-4 border-b border-gray-100 bg-slate-50 flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-extrabold text-sm text-[#032B73] uppercase tracking-wider font-mono">
+                      System Notifications
+                    </h3>
+                    {unreadNotificationsCount > 0 && (
+                      <span className="bg-rose-100 text-rose-700 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">
+                        {unreadNotificationsCount} unread
+                      </span>
+                    )}
+                  </div>
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const updated = await shipmentService.markAllNotificationsAsRead();
+                          setNotifications(updated);
+                          setUnreadNotificationsCount(0);
+                          showSystemMessage("success", "All alerts marked as read.");
+                        } catch (err) {
+                          showSystemMessage("error", "Failed to clear alert status.");
+                        }
+                      }}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropdown List */}
+                <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center text-gray-400 space-y-2">
+                      <Bell className="h-8 w-8 mx-auto stroke-1" />
+                      <p className="text-xs">No notifications logged in this cycle.</p>
+                    </div>
+                  ) : (
+                    notifications.slice(0, 5).map((notif) => {
+                      const getIcon = () => {
+                        switch (notif.type) {
+                          case "payment_outstanding":
+                            return <DollarSign className="h-4 w-4 text-emerald-600" />;
+                          case "shipment_delayed":
+                            return <AlertTriangle className="h-4 w-4 text-amber-600" />;
+                          case "shipment_delivered":
+                            return <CheckCircle className="h-4 w-4 text-green-600" />;
+                          case "customer_created":
+                            return <UserPlus className="h-4 w-4 text-blue-600" />;
+                          case "shipment_updated":
+                            return <RefreshCw className="h-4 w-4 text-indigo-600" />;
+                          case "admin_login":
+                            return <Shield className="h-4 w-4 text-indigo-800" />;
+                          case "system_error":
+                            return <ShieldAlert className="h-4 w-4 text-rose-600" />;
+                          default:
+                            return <Info className="h-4 w-4 text-gray-600" />;
+                        }
+                      };
+
+                      const getBg = () => {
+                        switch (notif.type) {
+                          case "payment_outstanding": return "bg-emerald-50 border-emerald-100";
+                          case "shipment_delayed": return "bg-amber-50 border-amber-100";
+                          case "shipment_delivered": return "bg-green-50 border-green-100";
+                          case "customer_created": return "bg-blue-50 border-blue-100";
+                          case "shipment_updated": return "bg-indigo-50 border-indigo-100";
+                          case "admin_login": return "bg-slate-50 border-slate-100";
+                          case "system_error": return "bg-rose-50 border-rose-100";
+                          default: return "bg-gray-50 border-gray-100";
+                        }
+                      };
+
+                      return (
+                        <div
+                          key={notif.id}
+                          className={`p-3.5 hover:bg-slate-50 transition-colors flex items-start space-x-3 ${
+                            !notif.read ? "bg-blue-50/40" : ""
+                          }`}
+                        >
+                          <div className={`p-2 rounded-lg border shrink-0 ${getBg()}`}>
+                            {getIcon()}
+                          </div>
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex justify-between items-start">
+                              <p className={`text-xs font-bold truncate leading-tight ${notif.read ? "text-slate-600" : "text-slate-900"}`}>
+                                {notif.title}
+                              </p>
+                              {!notif.read && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-blue-600 shrink-0 mt-1 ml-1" />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">
+                              {notif.message}
+                            </p>
+                            
+                            <div className="flex justify-between items-center pt-1">
+                              <span className="text-[9px] text-gray-400 font-mono">
+                                {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+
+                              <div className="flex space-x-2">
+                                {!notif.read && (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        const updatedNotif = await shipmentService.markNotificationAsRead(notif.id);
+                                        setNotifications(prev => prev.map(n => n.id === notif.id ? updatedNotif : n));
+                                        setUnreadNotificationsCount(prev => Math.max(0, prev - 1));
+                                      } catch (err) {
+                                        console.error(err);
+                                      }
+                                    }}
+                                    className="text-[10px] font-bold text-blue-600 hover:underline"
+                                  >
+                                    Mark read
+                                  </button>
+                                )}
+                                {notif.meta?.trackingNumber && (
+                                  <button
+                                    onClick={() => {
+                                      const tracking = notif.meta.trackingNumber;
+                                      const matched = shipments.find(s => s.trackingNumber.toUpperCase() === tracking.toUpperCase());
+                                      if (matched) {
+                                        setSelectedShipment(matched);
+                                        setActiveTab("update");
+                                        setShowNotificationsDropdown(false);
+                                      } else {
+                                        showSystemMessage("error", `Shipment ${tracking} no longer exists.`);
+                                      }
+                                    }}
+                                    className="text-[10px] font-black text-indigo-700 hover:underline flex items-center"
+                                  >
+                                    Inspect <ExternalLink className="h-2.5 w-2.5 ml-0.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Dropdown Footer */}
+                <div className="p-2 border-t border-gray-100 bg-slate-50 flex gap-2">
+                  <button
+                    onClick={() => {
+                      setActiveTab("notifications");
+                      setShowNotificationsDropdown(false);
+                    }}
+                    className="flex-1 text-center text-xs font-bold text-blue-800 hover:bg-blue-100/60 py-2 rounded-lg transition-colors border border-blue-200"
+                  >
+                    View All Notifications
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await shipmentService.simulateSystemError();
+                        fetchAdminNotifications();
+                        showSystemMessage("success", "Simulated system error alert fired.");
+                      } catch (err) {
+                        showSystemMessage("error", "Error simulation failed.");
+                      }
+                    }}
+                    className="px-3 text-center text-xs font-bold text-rose-700 hover:bg-rose-100/60 py-2 rounded-lg transition-colors border border-rose-200"
+                    title="Simulate System Error for quick verification"
+                  >
+                    Test Err
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            id="admin-logout-btn"
+            onClick={handleLogout}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Sign Out Session</span>
+          </button>
+        </div>
       </div>
 
       {/* GLOBAL COMMAND SEARCH BAR */}
@@ -738,6 +999,37 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
         >
           <Settings className="h-4.5 w-4.5" />
           <span>Business Settings</span>
+        </button>
+
+        <button
+          id="tab-notifications"
+          onClick={() => setActiveTab("notifications")}
+          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all relative ${
+            activeTab === "notifications" 
+              ? "border-b-2 border-[#032B73] text-[#032B73]" 
+              : "border-transparent text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          <Bell className="h-4.5 w-4.5 text-blue-800" />
+          <span>Notification Center</span>
+          {unreadNotificationsCount > 0 && (
+            <span className="ml-1 bg-rose-500 text-white font-mono font-bold text-[10px] px-1.5 py-0.5 rounded-full animate-pulse">
+              {unreadNotificationsCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          id="tab-audit"
+          onClick={() => setActiveTab("audit")}
+          className={`flex items-center space-x-2 py-3 px-5 border-b-2 font-bold text-xs sm:text-sm tracking-wide shrink-0 transition-all ${
+            activeTab === "audit" 
+              ? "border-b-2 border-[#032B73] text-[#032B73]" 
+              : "border-transparent text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          <History className="h-4.5 w-4.5 text-indigo-700" />
+          <span>Audit Ledger</span>
         </button>
       </div>
 
@@ -1392,11 +1684,31 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
         <ShipmentManagementHub
           shipment={activeShipment}
           actionLoading={actionLoading}
-          onUpdateMilestone={updateMilestone}
-          onUpdateStatusAndHealth={updateStatusAndHealth}
-          onAddInternalNote={addInternalNote}
-          onUploadDocument={uploadDocument}
-          onAddPaymentTransaction={addPaymentTransaction}
+          onUpdateMilestone={async (s, index, desc) => {
+            const res = await updateMilestone(s, index, desc);
+            fetchAdminNotifications();
+            return res;
+          }}
+          onUpdateStatusAndHealth={async (tn, h, d, auth) => {
+            const res = await updateStatusAndHealth(tn, h, d, auth);
+            fetchAdminNotifications();
+            return res;
+          }}
+          onAddInternalNote={async (tn, t, auth) => {
+            const res = await addInternalNote(tn, t, auth);
+            fetchAdminNotifications();
+            return res;
+          }}
+          onUploadDocument={async (tn, d) => {
+            const res = await uploadDocument(tn, d);
+            fetchAdminNotifications();
+            return res;
+          }}
+          onAddPaymentTransaction={async (tn, tx) => {
+            const res = await addPaymentTransaction(tn, tx);
+            fetchAdminNotifications();
+            return res;
+          }}
           onReturnToFleet={() => setActiveTab("fleet")}
           adminEmail={adminUser?.email || "admin@shipplix.com"}
         />
@@ -1488,6 +1800,363 @@ export default function AdminPanel({ onTrackingRequest }: AdminPanelProps) {
           <SettingsModule 
             showSystemMessage={showSystemMessage}
           />
+        </div>
+      )}
+
+      {/* 5. Notification Center Panel */}
+      {activeTab === "notifications" && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6 animate-[fadeIn_0.2s_ease-out]" id="full-notif-panel">
+          {/* Header Area */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-2 border-b border-gray-100">
+            <div>
+              <h3 className="text-lg font-extrabold text-[#032B73] uppercase tracking-wider font-mono flex items-center">
+                <Bell className="h-5 w-5 mr-2 text-blue-800" />
+                Notification Center
+              </h3>
+              <p className="text-xs text-gray-500">
+                Centralized ledger of system-wide administrative triggers, operational warnings, and transactional log entries.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const updated = await shipmentService.markAllNotificationsAsRead();
+                    setNotifications(updated);
+                    setUnreadNotificationsCount(0);
+                    showSystemMessage("success", "All notifications marked as read.");
+                  } catch (err) {
+                    showSystemMessage("error", "Failed to update notification states.");
+                  }
+                }}
+                className="bg-blue-50 hover:bg-blue-100 text-[#032B73] px-3.5 py-2 rounded-lg text-xs font-bold border border-blue-200 transition-all flex items-center space-x-1.5"
+              >
+                <CheckCircle className="h-3.5 w-3.5" />
+                <span>Mark All Read</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  if (window.confirm("Are you sure you want to permanently delete all notification records? This action cannot be undone.")) {
+                    try {
+                      await shipmentService.clearAllNotifications();
+                      setNotifications([]);
+                      setUnreadNotificationsCount(0);
+                      showSystemMessage("success", "Notification history cleared successfully.");
+                    } catch (err) {
+                      showSystemMessage("error", "Failed to clear notifications.");
+                    }
+                  }
+                }}
+                className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3.5 py-2 rounded-lg text-xs font-bold border border-rose-200 transition-all flex items-center space-x-1.5"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Clear History</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    await shipmentService.simulateSystemError();
+                    fetchAdminNotifications();
+                    showSystemMessage("success", "Fired automated Database Timeout simulation.");
+                  } catch (err) {
+                    showSystemMessage("error", "Simulation failed.");
+                  }
+                }}
+                className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-3.5 py-2 rounded-lg text-xs font-bold border border-amber-200 transition-all flex items-center space-x-1.5"
+              >
+                <AlertTriangle className="h-3.5 w-3.5" />
+                <span>Simulate Error</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Filter and Control Sidebar */}
+            <div className="space-y-4">
+              <div className="bg-slate-50 border border-gray-150 rounded-xl p-4 space-y-4">
+                <span className="text-[10px] text-slate-400 font-mono block uppercase font-bold tracking-wide">
+                  Query & Filter Engine
+                </span>
+
+                {/* Text Search */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search tracking #, name..."
+                    value={notificationSearch}
+                    onChange={(e) => setNotificationSearch(e.target.value)}
+                    className="w-full bg-white pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                  />
+                  {notificationSearch && (
+                    <button
+                      onClick={() => setNotificationSearch("")}
+                      className="absolute right-2.5 top-2.5 text-xs text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Type Selection List */}
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-500 font-bold block mb-2 uppercase">
+                    Select Event Type
+                  </span>
+                  {[
+                    { value: "all", label: "All Alerts", color: "border-l-gray-400" },
+                    { value: "payment_outstanding", label: "Payment Outstanding", color: "border-l-emerald-500" },
+                    { value: "shipment_delayed", label: "Shipment Delayed", color: "border-l-amber-500" },
+                    { value: "shipment_delivered", label: "Shipment Delivered", color: "border-l-green-500" },
+                    { value: "customer_created", label: "Customer Created", color: "border-l-blue-500" },
+                    { value: "shipment_updated", label: "Shipment Updated", color: "border-l-indigo-500" },
+                    { value: "admin_login", label: "Admin Login", color: "border-l-slate-800" },
+                    { value: "system_error", label: "System Errors", color: "border-l-rose-500" }
+                  ].map((filterItem) => (
+                    <button
+                      key={filterItem.value}
+                      onClick={() => setNotificationFilter(filterItem.value)}
+                      className={`w-full text-left px-3 py-2 text-xs rounded-md border-l-3 font-semibold transition-all flex justify-between items-center ${
+                        notificationFilter === filterItem.value
+                          ? "bg-blue-50 border border-blue-200 text-blue-900 border-l-blue-700"
+                          : "border border-gray-150 hover:bg-slate-100 text-slate-600 " + filterItem.color
+                      }`}
+                    >
+                      <span>{filterItem.label}</span>
+                      <span className="text-[10px] text-gray-400 font-mono">
+                        {filterItem.value === "all" 
+                          ? notifications.length 
+                          : notifications.filter(n => n.type === filterItem.value).length
+                        }
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status statistics summary */}
+              <div className="bg-blue-950 text-white rounded-xl p-4 space-y-3 font-mono text-[11px] leading-relaxed">
+                <span className="text-[9px] text-blue-300 block uppercase font-bold tracking-wider">
+                  Operational Health Metrics
+                </span>
+                <div className="space-y-1.5 divide-y divide-blue-900">
+                  <div className="flex justify-between py-1">
+                    <span>Unread Alerts:</span>
+                    <span className="text-rose-400 font-bold">{unreadNotificationsCount}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span>Outstanding Payments:</span>
+                    <span className="text-emerald-400 font-bold">
+                      {notifications.filter(n => n.type === "payment_outstanding").length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span>Active Delays:</span>
+                    <span className="text-amber-400 font-bold">
+                      {notifications.filter(n => n.type === "shipment_delayed").length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span>Crashes & Exceptions:</span>
+                    <span className="text-rose-400 font-bold">
+                      {notifications.filter(n => n.type === "system_error").length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* List and Cards View Area */}
+            <div className="lg:col-span-3 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-[11px] text-gray-500 font-bold">
+                  Showing {filteredNotifications.length} of {notifications.length} matching events
+                </span>
+              </div>
+
+              {filteredNotifications.length === 0 ? (
+                <div className="bg-slate-50 border border-gray-150 rounded-xl p-12 text-center space-y-3">
+                  <Bell className="h-10 w-10 text-gray-400 mx-auto stroke-1" />
+                  <p className="text-sm font-bold text-gray-600">No matching system logs found.</p>
+                  <p className="text-xs text-gray-400">
+                    Try adjusting your filters or triggering manual updates in status fields.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredNotifications.map((notif) => {
+                    const getIcon = () => {
+                      switch (notif.type) {
+                        case "payment_outstanding":
+                          return <DollarSign className="h-5 w-5 text-emerald-600" />;
+                        case "shipment_delayed":
+                          return <AlertTriangle className="h-5 w-5 text-amber-600" />;
+                        case "shipment_delivered":
+                          return <CheckCircle className="h-5 w-5 text-green-600" />;
+                        case "customer_created":
+                          return <UserPlus className="h-5 w-5 text-blue-600" />;
+                        case "shipment_updated":
+                          return <RefreshCw className="h-5 w-5 text-indigo-600" />;
+                        case "admin_login":
+                          return <Shield className="h-5 w-5 text-indigo-800" />;
+                        case "system_error":
+                          return <ShieldAlert className="h-5 w-5 text-rose-600" />;
+                        default:
+                          return <Info className="h-5 w-5 text-gray-600" />;
+                      }
+                    };
+
+                    const getBg = () => {
+                      switch (notif.type) {
+                        case "payment_outstanding": return "bg-emerald-50 border-emerald-100";
+                        case "shipment_delayed": return "bg-amber-50 border-amber-100";
+                        case "shipment_delivered": return "bg-green-50 border-green-100";
+                        case "customer_created": return "bg-blue-50 border-blue-100";
+                        case "shipment_updated": return "bg-indigo-50 border-indigo-100";
+                        case "admin_login": return "bg-slate-50 border-slate-100";
+                        case "system_error": return "bg-rose-50 border-rose-100";
+                        default: return "bg-gray-50 border-gray-100";
+                      }
+                    };
+
+                    return (
+                      <div
+                        key={notif.id}
+                        className={`border rounded-xl p-4 transition-all hover:shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
+                          !notif.read ? "bg-blue-50/20 border-blue-200" : "bg-white border-gray-200"
+                        }`}
+                      >
+                        <div className="flex items-start space-x-4 min-w-0 flex-1">
+                          <div className={`p-2.5 rounded-xl border shrink-0 ${getBg()}`}>
+                            {getIcon()}
+                          </div>
+                          
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider text-[9px] ${
+                                notif.type === "system_error" ? "bg-rose-100 text-rose-700 font-bold" :
+                                notif.type === "payment_outstanding" ? "bg-emerald-100 text-emerald-700 font-bold" :
+                                "bg-gray-100 text-gray-700"
+                              }`}>
+                                {notif.type.replace('_', ' ')}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                {new Date(notif.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+
+                            <h4 className="text-sm font-extrabold text-slate-800 leading-tight">
+                              {notif.title}
+                            </h4>
+
+                            <p className="text-xs text-slate-600 leading-relaxed max-w-xl">
+                              {notif.message}
+                            </p>
+
+                            {/* Meta payloads */}
+                            {notif.meta && Object.keys(notif.meta).length > 0 && (
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {notif.meta.trackingNumber && (
+                                  <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono text-[10px] border border-slate-200 font-bold">
+                                    TRACK: {notif.meta.trackingNumber}
+                                  </span>
+                                )}
+                                {notif.meta.balance !== undefined && (
+                                  <span className="bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-mono text-[10px] border border-rose-200 font-bold">
+                                    BAL OUTSTANDING: ${notif.meta.balance.toFixed(2)}
+                                  </span>
+                                )}
+                                {notif.meta.email && (
+                                  <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-mono text-[10px] border border-indigo-200 font-bold">
+                                    USER: {notif.meta.email}
+                                  </span>
+                                )}
+                                {notif.meta.shipmentHealth && (
+                                  <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-mono text-[10px] border border-amber-200 uppercase font-bold">
+                                    HEALTH: {notif.meta.shipmentHealth}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Card Actions */}
+                        <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center w-full md:w-auto pt-3 md:pt-0 border-t md:border-0 border-gray-100 gap-2 shrink-0">
+                          <div className="flex gap-2">
+                            {!notif.read && (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const updated = await shipmentService.markNotificationAsRead(notif.id);
+                                    setNotifications(prev => prev.map(n => n.id === notif.id ? updated : n));
+                                    setUnreadNotificationsCount(prev => Math.max(0, prev - 1));
+                                  } catch (err) {
+                                    console.error(err);
+                                  }
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-xs"
+                              >
+                                Mark Read
+                              </button>
+                            )}
+
+                            {notif.meta?.trackingNumber && (
+                              <button
+                                onClick={() => {
+                                  const tracking = notif.meta.trackingNumber;
+                                  const matched = shipments.find(s => s.trackingNumber.toUpperCase() === tracking.toUpperCase());
+                                  if (matched) {
+                                    setSelectedShipment(matched);
+                                    setActiveTab("update");
+                                  } else {
+                                    showSystemMessage("error", `Shipment ${tracking} no longer exists.`);
+                                  }
+                                }}
+                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border border-indigo-200 transition-all flex items-center space-x-1"
+                              >
+                                <span>Inspect Fleet</span>
+                                <ExternalLink className="h-3 w-3" />
+                              </button>
+                            )}
+
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await shipmentService.deleteNotification(notif.id);
+                                  setNotifications(prev => prev.filter(n => n.id !== notif.id));
+                                  if (!notif.read) {
+                                    setUnreadNotificationsCount(prev => Math.max(0, prev - 1));
+                                  }
+                                  showSystemMessage("success", "Notification deleted.");
+                                } catch (err) {
+                                  showSystemMessage("error", "Failed to delete notification.");
+                                }
+                              }}
+                              className="text-gray-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition-all"
+                              title="Delete notification"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Admin Audit Ledger Panel */}
+      {activeTab === "audit" && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 animate-[fadeIn_0.2s_ease-out]" id="audit-logs-panel">
+          <AuditLogModule />
         </div>
       )}
 

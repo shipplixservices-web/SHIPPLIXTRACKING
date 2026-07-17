@@ -5,6 +5,7 @@ import {
   HelpCircle, Search, Edit2, ChevronRight, Save, Receipt, Building, Filter, ArrowUpRight
 } from "lucide-react";
 import { Shipment } from "../types.js";
+import { formatCurrency, getCurrencySymbol } from "../utils/currencyUtils.ts";
 import { 
   ShipmentFinance, parseShipmentNotesAndFinance, serializeNotesWithFinance, calculateFinanceCalculatedFields 
 } from "../utils/financeUtils.ts";
@@ -226,8 +227,8 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
         {/* TOTAL REVENUE */}
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <span className="text-[10px] text-gray-400 font-mono block uppercase tracking-wider">Total Revenue</span>
-          <p className="text-2xl font-black text-[#032B73] font-mono mt-1">
-            ${financeRollup.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <p className="text-2xl font-black text-brand-blue font-mono mt-1">
+            {formatCurrency(financeRollup.totalRevenue)}
           </p>
           <span className="text-[9px] text-gray-500 font-mono block mt-1">Aggregate gross billings</span>
         </div>
@@ -236,16 +237,16 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <span className="text-[10px] text-gray-400 font-mono block uppercase tracking-wider">Operating Costs</span>
           <p className="text-2xl font-black text-slate-700 font-mono mt-1">
-            ${financeRollup.totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(financeRollup.totalCost)}
           </p>
           <span className="text-[9px] text-slate-400 font-mono block mt-1">Aggregate actual expenses</span>
         </div>
 
         {/* NET PROFIT */}
-        <div className="bg-white p-5 rounded-2xl border border-[#FFD700]/20 border-l-4 shadow-xs">
+        <div className="bg-white p-5 rounded-2xl border border-brand-yellow/20 border-l-4 shadow-xs">
           <span className="text-[10px] text-emerald-700 font-mono block uppercase tracking-wider font-bold">Net Profit</span>
           <p className="text-2xl font-black text-emerald-600 font-mono mt-1">
-            ${financeRollup.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(financeRollup.totalProfit)}
           </p>
           <span className="text-[9px] text-emerald-600 font-bold block mt-1">
             Margin: {financeRollup.totalRevenue > 0 ? Math.round((financeRollup.totalProfit / financeRollup.totalRevenue) * 100) : 0}%
@@ -256,7 +257,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <span className="text-[10px] text-gray-400 font-mono block uppercase tracking-wider font-semibold">Collected Cash</span>
           <p className="text-2xl font-black text-blue-600 font-mono mt-1">
-            ${financeRollup.totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(financeRollup.totalPaid)}
           </p>
           <span className="text-[9px] text-emerald-600 font-bold block mt-1">
             {financeRollup.totalRevenue > 0 ? Math.round((financeRollup.totalPaid / financeRollup.totalRevenue) * 100) : 0}% Collection Rate
@@ -267,7 +268,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
         <div className="bg-white p-5 rounded-2xl border border-amber-100 bg-amber-50/20 shadow-xs">
           <span className="text-[10px] text-amber-800 font-mono block uppercase tracking-wider font-bold">Accounts Receivable</span>
           <p className="text-2xl font-black text-amber-700 font-mono mt-1">
-            ${financeRollup.totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(financeRollup.totalBalance)}
           </p>
           <span className="text-[9px] text-amber-700 font-medium block mt-1">
             Outstanding from {financeRollup.unpaidCount + financeRollup.partialCount} files
@@ -349,7 +350,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                   >
                     <div className="space-y-1 pr-2">
                       <div className="flex items-center space-x-2">
-                        <span className="font-mono font-bold text-xs text-[#032B73] hover:underline">
+                        <span className="font-mono font-bold text-xs text-brand-blue hover:underline">
                           {item.shipment.trackingNumber}
                         </span>
                         <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">
@@ -367,7 +368,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
 
                     <div className="text-right shrink-0 space-y-1">
                       <p className="text-xs font-mono font-black text-slate-800">
-                        ${item.finance.totalCharged.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {formatCurrency(item.finance.totalCharged)}
                       </p>
                       
                       <span className={`inline-block text-[9px] px-2 py-0.5 rounded-full ${badgeClass}`}>
@@ -376,7 +377,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                       
                       {item.finance.balance > 0 && (
                         <p className="text-[9px] font-mono font-semibold text-red-500 block">
-                          Bal: ${item.finance.balance.toLocaleString()}
+                          Bal: {formatCurrency(item.finance.balance)}
                         </p>
                       )}
                     </div>
@@ -428,21 +429,21 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                   <div className="bg-slate-800 p-2 rounded border border-slate-700">
                     <span className="text-[9px] text-slate-400 block uppercase">Total Charged</span>
                     <span className="text-xs font-black text-amber-300">
-                      ${liveCalculatedFields.totalCharged.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {formatCurrency(liveCalculatedFields.totalCharged)}
                     </span>
                   </div>
 
                   <div className="bg-slate-800 p-2 rounded border border-slate-700">
                     <span className="text-[9px] text-slate-400 block uppercase">Profit Margin</span>
                     <span className={`text-xs font-black ${liveCalculatedFields.profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                      ${liveCalculatedFields.profit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {formatCurrency(liveCalculatedFields.profit)}
                     </span>
                   </div>
 
                   <div className="bg-slate-800 p-2 rounded border border-slate-700">
                     <span className="text-[9px] text-slate-400 block uppercase">Balance Due</span>
                     <span className={`text-xs font-black ${liveCalculatedFields.balance > 0 ? "text-red-400" : "text-slate-300"}`}>
-                      ${liveCalculatedFields.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {formatCurrency(liveCalculatedFields.balance)}
                     </span>
                   </div>
                 </div>
@@ -469,7 +470,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                   {/* Shipping Fee */}
                   <div className="space-y-1">
                     <label className="font-bold text-gray-700 font-mono uppercase tracking-wide block">
-                      Shipping Fee ($)
+                      Shipping Fee ({getCurrencySymbol()})
                     </label>
                     <input
                       type="number"
@@ -485,7 +486,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                   {/* Packaging Fee */}
                   <div className="space-y-1">
                     <label className="font-bold text-gray-700 font-mono uppercase tracking-wide block">
-                      Packaging Fee ($)
+                      Packaging Fee ({getCurrencySymbol()})
                     </label>
                     <input
                       type="number"
@@ -501,7 +502,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                   {/* Pickup Fee */}
                   <div className="space-y-1">
                     <label className="font-bold text-gray-700 font-mono uppercase tracking-wide block">
-                      Pickup Fee ($)
+                      Pickup Fee ({getCurrencySymbol()})
                     </label>
                     <input
                       type="number"
@@ -517,7 +518,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                   {/* Insurance */}
                   <div className="space-y-1">
                     <label className="font-bold text-gray-700 font-mono uppercase tracking-wide block">
-                      Insurance ($)
+                      Insurance ({getCurrencySymbol()})
                     </label>
                     <input
                       type="number"
@@ -533,7 +534,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                   {/* Custom Charge */}
                   <div className="space-y-1">
                     <label className="font-bold text-gray-700 font-mono uppercase tracking-wide block">
-                      Customs Charge ($)
+                      Customs Charge ({getCurrencySymbol()})
                     </label>
                     <input
                       type="number"
@@ -549,7 +550,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                   {/* Discount */}
                   <div className="space-y-1">
                     <label className="font-bold text-gray-700 font-mono uppercase tracking-wide block">
-                      Discount ($)
+                      Discount ({getCurrencySymbol()})
                     </label>
                     <input
                       type="number"
@@ -565,7 +566,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                   {/* Other Charges */}
                   <div className="space-y-1">
                     <label className="font-bold text-gray-700 font-mono uppercase tracking-wide block">
-                      Other Charges ($)
+                      Other Charges ({getCurrencySymbol()})
                     </label>
                     <input
                       type="number"
@@ -580,8 +581,8 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
 
                   {/* Actual Cost */}
                   <div className="space-y-1">
-                    <label className="font-bold text-[#032B73] font-mono uppercase tracking-wide block">
-                      Actual Cost ($)
+                    <label className="font-bold text-brand-blue font-mono uppercase tracking-wide block">
+                      Actual Cost ({getCurrencySymbol()})
                     </label>
                     <input
                       type="number"
@@ -626,7 +627,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                   {/* Amount Paid */}
                   <div className="space-y-1">
                     <label className="font-bold text-gray-700 font-mono uppercase tracking-wide block">
-                      Amount Paid ($)
+                      Amount Paid ({getCurrencySymbol()})
                     </label>
                     <input
                       type="number"
@@ -644,7 +645,7 @@ export default function FinanceModule({ shipments, loading, onUpdateShipmentDeta
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="w-full mt-4 bg-[#032B73] hover:bg-blue-900 text-white font-mono font-bold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all disabled:opacity-50"
+                  className="w-full mt-4 bg-brand-blue hover:bg-brand-blue-dark text-white font-mono font-bold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all disabled:opacity-50"
                 >
                   <Save className="h-4.5 w-4.5" />
                   <span>{isSaving ? "Synchronizing Cloud..." : "Save Financial Record"}</span>

@@ -390,6 +390,277 @@ function triggerNotification(shipment: Shipment, milestoneName: string): Notific
   return newNotifs;
 }
 
+// Admin Notification Center Persistence & Helpers
+const NOTIF_FILE = path.join(process.cwd(), "notifications.json");
+
+// Admin Action Recorder / Audit Logs Center
+const AUDIT_FILE = path.join(process.cwd(), "audit_logs.json");
+
+export interface AdminAuditLog {
+  id: string;
+  admin: string;
+  timestamp: string;
+  action: string;
+  oldValue: string;
+  newValue: string;
+}
+
+function readAuditLogs(): AdminAuditLog[] {
+  try {
+    if (!fs.existsSync(AUDIT_FILE)) {
+      const initialLogs: AdminAuditLog[] = [
+        {
+          id: `audit-seed-1`,
+          admin: "shipplixservices@gmail.com",
+          timestamp: new Date(Date.now() - 4 * 3600000).toISOString(),
+          action: "Create Shipment",
+          oldValue: "-",
+          newValue: "Created Shipment SPX-20260625-5522 for Mrs. Adebayo. Destination: United States, Weight: 45.2 KG"
+        },
+        {
+          id: `audit-seed-2`,
+          admin: "shipplixservices@gmail.com",
+          timestamp: new Date(Date.now() - 3.5 * 3600000).toISOString(),
+          action: "Update Milestone",
+          oldValue: "Shipment Received (Stage 1)",
+          newValue: "Customs Review (Stage 7) for SPX-20260625-5522"
+        }
+      ];
+      fs.writeFileSync(AUDIT_FILE, JSON.stringify(initialLogs, null, 2));
+      return initialLogs;
+    }
+    const data = fs.readFileSync(AUDIT_FILE, "utf-8");
+    return JSON.parse(data);
+  } catch (error) {
+    console.error("Error reading audit logs file", error);
+    return [];
+  }
+}
+
+function writeAuditLogs(logs: AdminAuditLog[]) {
+  try {
+    fs.writeFileSync(AUDIT_FILE, JSON.stringify(logs, null, 2));
+  } catch (error) {
+    console.error("Error writing audit logs file", error);
+  }
+}
+
+function addAuditLog(admin: string, action: string, oldValue: string, newValue: string) {
+  try {
+    const logs = readAuditLogs();
+    const newLog: AdminAuditLog = {
+      id: `audit-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      admin: admin || "admin@shipplix.com",
+      timestamp: new Date().toISOString(),
+      action,
+      oldValue: oldValue || "-",
+      newValue: newValue || "-"
+    };
+    logs.unshift(newLog);
+    if (logs.length > 1000) {
+      logs.splice(1000);
+    }
+    writeAuditLogs(logs);
+    return newLog;
+  } catch (error) {
+    console.error("Failed to add audit log", error);
+  }
+}
+
+// Parser helper for financial notes
+const FINANCE_SEPARATOR_SERVER = "\n\n__FINANCE_METADATA_JSON__\n";
+function serverParseNotesAndFinance(shipmentNotes: string) {
+  const fullNotes = shipmentNotes || "";
+  const parts = fullNotes.split(FINANCE_SEPARATOR_SERVER);
+  const cleanNotes = parts[0].trim();
+  let finance: any = null;
+  if (parts.length > 1) {
+    try {
+      finance = JSON.parse(parts[1].trim());
+    } catch (e) {
+      // ignore
+    }
+  }
+  return { notes: cleanNotes, finance };
+}
+
+export interface AdminNotification {
+  id: string;
+  type: "payment_outstanding" | "shipment_delayed" | "shipment_delivered" | "customer_created" | "shipment_updated" | "admin_login" | "system_error";
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  meta?: any;
+}
+
+function readNotifications(): AdminNotification[] {
+  try {
+    if (!fs.existsSync(NOTIF_FILE)) {
+      const initialNotifs: AdminNotification[] = [
+        {
+          id: `notif-seed-1`,
+          type: "admin_login",
+          title: "Admin Session Authenticated",
+          message: "Secure administrative login successful from shipplixservices@gmail.com",
+          timestamp: new Date(Date.now() - 30 * 60000).toISOString(),
+          read: false
+        },
+        {
+          id: `notif-seed-2`,
+          type: "payment_outstanding",
+          title: "Payment Outstanding for SPX-20260625-5522",
+          message: "Outstanding balance of $592.40 detected for Mrs. Adebayo (Fashion Vendor)'s shipment.",
+          timestamp: new Date(Date.now() - 2 * 3600000).toISOString(),
+          read: false,
+          meta: { trackingNumber: "SPX-20260625-5522" }
+        },
+        {
+          id: `notif-seed-3`,
+          type: "customer_created",
+          title: "New Client Profile Registered",
+          message: "Customer 'Ngozi A. (Retailer)' was created upon booking package SPX-20260626-3120.",
+          timestamp: new Date(Date.now() - 4 * 3600000).toISOString(),
+          read: true,
+          meta: { trackingNumber: "SPX-20260626-3120" }
+        },
+        {
+          id: `notif-seed-4`,
+          type: "shipment_delivered",
+          title: "Shipment SPX-20260620-1080 Delivered Successfully",
+          message: "Shipment to Richard Sterling (United Kingdom) completed all 24 security transit stages.",
+          timestamp: new Date(Date.now() - 1 * 86400000).toISOString(),
+          read: true,
+          meta: { trackingNumber: "SPX-20260620-1080" }
+        }
+      ];
+      fs.writeFileSync(NOTIF_FILE, JSON.stringify(initialNotifs, null, 2));
+      return initialNotifs;
+    }
+    const data = fs.readFileSync(NOTIF_FILE, "utf-8");
+    return JSON.parse(data);
+  } catch (error) {
+    console.error("Error reading notifications file", error);
+    return [];
+  }
+}
+
+function writeNotifications(notifications: AdminNotification[]) {
+  try {
+    fs.writeFileSync(NOTIF_FILE, JSON.stringify(notifications, null, 2));
+  } catch (error) {
+    console.error("Error writing notifications file", error);
+  }
+}
+
+function addAdminNotification(
+  type: AdminNotification["type"],
+  title: string,
+  message: string,
+  meta?: any
+) {
+  const notifications = readNotifications();
+  const newNotif: AdminNotification = {
+    id: `notif-admin-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    type,
+    title,
+    message,
+    timestamp: new Date().toISOString(),
+    read: false,
+    meta
+  };
+  notifications.unshift(newNotif);
+  if (notifications.length > 100) {
+    notifications.splice(100);
+  }
+  writeNotifications(notifications);
+  return newNotif;
+}
+
+// API: Get Admin Notifications
+app.get("/api/notifications", (req, res) => {
+  try {
+    const notifications = readNotifications();
+    res.json({ success: true, notifications });
+  } catch (err: any) {
+    console.error("Error in GET /api/notifications:", err);
+    res.status(500).json({ success: false, message: "Failed to read notifications." });
+  }
+});
+
+// API: Mark all notifications as read
+app.post("/api/notifications/read-all", (req, res) => {
+  try {
+    const notifications = readNotifications();
+    notifications.forEach(n => n.read = true);
+    writeNotifications(notifications);
+    res.json({ success: true, notifications });
+  } catch (err: any) {
+    console.error("Error in POST /api/notifications/read-all:", err);
+    res.status(500).json({ success: false, message: "Failed to mark notifications as read." });
+  }
+});
+
+// API: Mark single notification as read
+app.post("/api/notifications/:id/read", (req, res) => {
+  try {
+    const { id } = req.params;
+    const notifications = readNotifications();
+    const index = notifications.findIndex(n => n.id === id);
+    if (index !== -1) {
+      notifications[index].read = true;
+      writeNotifications(notifications);
+      return res.json({ success: true, notification: notifications[index] });
+    }
+    res.status(404).json({ success: false, message: "Notification not found." });
+  } catch (err: any) {
+    console.error("Error in POST /api/notifications/:id/read:", err);
+    res.status(500).json({ success: false, message: "Failed to mark notification as read." });
+  }
+});
+
+// API: Delete single notification
+app.delete("/api/notifications/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    let notifications = readNotifications();
+    const initialLength = notifications.length;
+    notifications = notifications.filter(n => n.id !== id);
+    if (notifications.length === initialLength) {
+      return res.status(404).json({ success: false, message: "Notification not found." });
+    }
+    writeNotifications(notifications);
+    res.json({ success: true, message: "Notification deleted successfully." });
+  } catch (err: any) {
+    console.error("Error in DELETE /api/notifications/:id:", err);
+    res.status(500).json({ success: false, message: "Failed to delete notification." });
+  }
+});
+
+// API: Clear all notifications
+app.delete("/api/notifications", (req, res) => {
+  try {
+    writeNotifications([]);
+    res.json({ success: true, message: "All notifications cleared." });
+  } catch (err: any) {
+    console.error("Error in DELETE /api/notifications:", err);
+    res.status(500).json({ success: false, message: "Failed to clear notifications." });
+  }
+});
+
+// API: Simulate system error
+app.post("/api/errors/simulate", (req, res) => {
+  try {
+    const { title, message } = req.body;
+    const errTitle = title || "Central Database Timeout";
+    const errMsg = message || "The primary cluster connector reported a handshake failure (timeout 5000ms) with replication nodes.";
+    const notif = addAdminNotification("system_error", errTitle, errMsg);
+    res.json({ success: true, notification: notif });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: "Failed to simulate system error." });
+  }
+});
+
 // API: Authentication endpoint (Simple secure admin password checking)
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
@@ -399,11 +670,21 @@ app.post("/api/login", (req, res) => {
   const isValidPassword = (password === "Sh1ppL1x#Op_918273_SecUrE");
   
   if (isValidUser && isValidPassword) {
+    const userEmail = email === "shipplix_director_ops" ? "shipplixservices@gmail.com" : email;
+    
+    // Log Admin Login notification
+    addAdminNotification(
+      "admin_login",
+      "Administrative Console Access Authenticated",
+      `Authorized log-in session opened successfully for operator: ${userEmail}`,
+      { email: userEmail }
+    );
+
     return res.json({
       success: true,
       token: `shipplix-jwt-token-hash-2026-admin-access`,
       user: {
-        email: email === "shipplix_director_ops" ? "shipplixservices@gmail.com" : email,
+        email: userEmail,
         role: "administrator",
         name: "Shipplix Operations Admin"
       }
@@ -546,6 +827,32 @@ app.post("/api/shipments", (req, res) => {
   writeDatabase(shipments);
   performBackup(shipments);
 
+  // Record admin action
+  const adminEmail = req.headers["x-admin-email"] || req.body.adminEmail || "admin@shipplix.com";
+  addAuditLog(
+    adminEmail as string,
+    "Create Shipment",
+    "-",
+    `Created Shipment ${newShipment.trackingNumber} for ${newShipment.senderName}. Destination: ${newShipment.destinationCountry}, Weight: ${newShipment.weight} KG`
+  );
+
+  // Trigger admin notifications
+  addAdminNotification(
+    "customer_created",
+    "New Client Profile Registered",
+    `Customer '${newShipment.senderName}' was created upon booking package ${newShipment.trackingNumber}.`,
+    { trackingNumber: newShipment.trackingNumber, senderName: newShipment.senderName }
+  );
+
+  if (amountDue > 0) {
+    addAdminNotification(
+      "payment_outstanding",
+      `Payment Outstanding for ${newShipment.trackingNumber}`,
+      `Outstanding balance of $${amountDue.toFixed(2)} detected for ${newShipment.senderName}'s shipment.`,
+      { trackingNumber: newShipment.trackingNumber, balance: amountDue }
+    );
+  }
+
   res.status(201).json({ success: true, shipment: newShipment });
 });
 
@@ -561,6 +868,65 @@ app.put("/api/shipments/:trackingNumber", (req, res) => {
   }
 
   const existingShipment = shipments[index];
+  const adminEmail = req.headers["x-admin-email"] || req.body.adminEmail || "admin@shipplix.com";
+  const actionType = req.headers["x-action-type"];
+
+  if (actionType === "Edit Finance") {
+    const oldFinObj = serverParseNotesAndFinance(existingShipment.shipmentNotes);
+    const newFinObj = serverParseNotesAndFinance(updatedData.shipmentNotes || "");
+    const oldFinance = oldFinObj.finance;
+    const newFinance = newFinObj.finance;
+    
+    const oldValueStr = oldFinance 
+      ? `Total Charged: $${oldFinance.totalCharged}, Status: ${oldFinance.paymentStatus}, Paid: $${oldFinance.amountPaid}, Cost: $${oldFinance.actualCost}, Profit: $${oldFinance.profit}`
+      : `No finance details found`;
+      
+    const newValueStr = newFinance
+      ? `Total Charged: $${newFinance.totalCharged}, Status: ${newFinance.paymentStatus}, Paid: $${newFinance.amountPaid}, Cost: $${newFinance.actualCost}, Profit: $${newFinance.profit}`
+      : `No finance details found`;
+
+    addAuditLog(
+      adminEmail as string,
+      "Edit Finance",
+      oldValueStr,
+      `Updated finances for ${trackingNumber}: ${newValueStr}`
+    );
+  } else {
+    const oldVals = [];
+    const newVals = [];
+    const fields = [
+      { key: "senderName", label: "Sender" },
+      { key: "receiverName", label: "Receiver" },
+      { key: "phoneNumber", label: "Phone" },
+      { key: "originCountry", label: "Origin" },
+      { key: "destinationCountry", label: "Destination" },
+      { key: "weight", label: "Weight" },
+      { key: "numberOfPackages", label: "Packages" },
+      { key: "serviceType", label: "Service" },
+      { key: "bookingDate", label: "Booking Date" },
+      { key: "expectedDeliveryDate", label: "Expected Delivery" },
+      { key: "portGateway", label: "Port Gateway" }
+    ];
+
+    for (const f of fields) {
+      const oldVal = (existingShipment as any)[f.key];
+      const newVal = (updatedData as any)[f.key];
+      if (newVal !== undefined && String(newVal) !== String(oldVal)) {
+        oldVals.push(`${f.label}: ${oldVal}`);
+        newVals.push(`${f.label}: ${newVal}`);
+      }
+    }
+
+    const oldValueStr = oldVals.length > 0 ? oldVals.join(", ") : "No changes";
+    const newValueStr = newVals.length > 0 ? newVals.join(", ") : "No changes";
+
+    addAuditLog(
+      adminEmail as string,
+      "Edit Shipment",
+      `Shipment ${trackingNumber}: ${oldValueStr}`,
+      `Shipment ${trackingNumber}: ${newValueStr}`
+    );
+  }
   
   // Merge core fields
   shipments[index] = {
@@ -580,6 +946,15 @@ app.put("/api/shipments/:trackingNumber", (req, res) => {
   };
 
   writeDatabase(shipments);
+
+  // Trigger admin notification for Shipment Updated
+  addAdminNotification(
+    "shipment_updated",
+    `Shipment Details Updated: ${existingShipment.trackingNumber}`,
+    `Core parameters (sender, receiver, weight, or service speed) modified by administrative operator.`,
+    { trackingNumber: existingShipment.trackingNumber }
+  );
+
   res.json({ success: true, shipment: shipments[index] });
 });
 
@@ -625,6 +1000,8 @@ app.post("/api/shipments/:trackingNumber/milestone", (req, res) => {
     });
   }
 
+  const previousIndex = shipment.currentMilestoneIndex;
+
   // Sort history by index
   shipment.milestoneHistory.sort((a, b) => a.milestoneIndex - b.milestoneIndex);
 
@@ -636,6 +1013,34 @@ app.post("/api/shipments/:trackingNumber/milestone", (req, res) => {
   shipment.notifications = [...(shipment.notifications || []), ...newNotifs];
 
   writeDatabase(shipments);
+
+  // Record admin action
+  const adminEmail = req.headers["x-admin-email"] || req.body.adminEmail || "admin@shipplix.com";
+  const oldMilestoneName = MILESTONES[previousIndex] ? MILESTONES[previousIndex].name : "Unknown";
+  addAuditLog(
+    adminEmail as string,
+    "Update Milestone",
+    `${oldMilestoneName} (Stage ${previousIndex + 1})`,
+    `${milestoneName} (Stage ${parsedIndex + 1}) for ${trackingNumber}`
+  );
+
+  // Trigger admin notifications for Shipment Updated & Shipment Delivered
+  addAdminNotification(
+    "shipment_updated",
+    `Milestone Advanced: ${shipment.trackingNumber}`,
+    `Shipment progressed to transit milestone: '${milestoneName}' (Stage ${parsedIndex + 1}/24).`,
+    { trackingNumber: shipment.trackingNumber, milestoneIndex: parsedIndex, milestoneName }
+  );
+
+  if (parsedIndex === 23) {
+    addAdminNotification(
+      "shipment_delivered",
+      `Shipment Delivered: ${shipment.trackingNumber}`,
+      `Shipment has been delivered safely to ${shipment.receiverName} in ${shipment.destinationCountry}.`,
+      { trackingNumber: shipment.trackingNumber }
+    );
+  }
+
   res.json({ success: true, shipment });
 });
 
@@ -651,6 +1056,15 @@ app.post("/api/shipments/:trackingNumber/pause", (req, res) => {
 
   shipments[index].isPaused = true;
   writeDatabase(shipments);
+
+  // Trigger admin notification for Shipment Placed On Hold
+  addAdminNotification(
+    "shipment_updated",
+    `Shipment Placed On Hold: ${trackingNumber}`,
+    `Operational pause toggle activated. Transit state set to Suspended.`,
+    { trackingNumber }
+  );
+
   res.json({ success: true, shipment: shipments[index] });
 });
 
@@ -666,22 +1080,40 @@ app.post("/api/shipments/:trackingNumber/resume", (req, res) => {
 
   shipments[index].isPaused = false;
   writeDatabase(shipments);
+
+  // Trigger admin notification for Shipment Resumed
+  addAdminNotification(
+    "shipment_updated",
+    `Shipment Resumed: ${trackingNumber}`,
+    `Operational pause toggle deactivated. Cargo returned to active transit stream.`,
+    { trackingNumber }
+  );
+
   res.json({ success: true, shipment: shipments[index] });
 });
 
 // API: Delete shipment
 app.delete("/api/shipments/:trackingNumber", (req, res) => {
   const { trackingNumber } = req.params;
-  let shipments = readDatabase();
+  const shipments = readDatabase();
   
-  const initialLength = shipments.length;
-  shipments = shipments.filter(s => s.trackingNumber.toUpperCase() !== trackingNumber.toUpperCase());
-  
-  if (shipments.length === initialLength) {
+  const existing = shipments.find(s => s.trackingNumber.toUpperCase() === trackingNumber.toUpperCase());
+  if (!existing) {
     return res.status(404).json({ success: false, message: "Shipment not found." });
   }
 
-  writeDatabase(shipments);
+  const updatedShipments = shipments.filter(s => s.trackingNumber.toUpperCase() !== trackingNumber.toUpperCase());
+  writeDatabase(updatedShipments);
+
+  // Record admin action
+  const adminEmail = req.headers["x-admin-email"] || req.body.adminEmail || "admin@shipplix.com";
+  addAuditLog(
+    adminEmail as string,
+    "Delete Shipment",
+    `Tracking: ${trackingNumber}, Sender: ${existing.senderName}, Destination: ${existing.destinationCountry}, Weight: ${existing.weight} KG`,
+    "Deleted"
+  );
+
   res.json({ success: true, message: `Shipment ${trackingNumber} has been successfully deleted.` });
 });
 
@@ -710,6 +1142,24 @@ app.put("/api/shipments/:trackingNumber/status", (req, res) => {
   });
 
   writeDatabase(shipments);
+
+  // Trigger admin notifications for Shipment Health/Delay
+  if (shipmentHealth === "delayed" || (delayStatus && delayStatus !== "None")) {
+    addAdminNotification(
+      "shipment_delayed",
+      `Shipment Delayed: ${shipment.trackingNumber}`,
+      `Cargo health marked as '${shipmentHealth}'. Delay Reason: ${delayStatus || 'None'}.`,
+      { trackingNumber: shipment.trackingNumber, shipmentHealth, delayStatus }
+    );
+  } else {
+    addAdminNotification(
+      "shipment_updated",
+      `Shipment Health Updated: ${shipment.trackingNumber}`,
+      `Cargo physical health parameters adjusted. State set to: ${shipmentHealth}.`,
+      { trackingNumber: shipment.trackingNumber, shipmentHealth }
+    );
+  }
+
   res.json({ success: true, shipment });
 });
 
@@ -801,6 +1251,9 @@ app.post("/api/shipments/:trackingNumber/transactions", (req, res) => {
     transactions: []
   };
 
+  const previousStatus = shipment.paymentHistory.status;
+  const previousPaid = shipment.paymentHistory.amountPaid;
+
   const amountNum = parseFloat(amount);
   const newTx = {
     id: `tx-${Date.now()}`,
@@ -832,7 +1285,64 @@ app.post("/api/shipments/:trackingNumber/transactions", (req, res) => {
   });
 
   writeDatabase(shipments);
+
+  // Record admin action
+  const adminEmail = req.headers["x-admin-email"] || author || "admin@shipplix.com";
+  addAuditLog(
+    adminEmail as string,
+    "Add Payment",
+    `Paid: $${previousPaid}, Status: ${previousStatus}`,
+    `Added $${amountNum} via ${newTx.method}. Paid: $${shipment.paymentHistory.amountPaid}, Status: ${shipment.paymentHistory.status} for ${trackingNumber}`
+  );
+
+  // Trigger admin notification for transactions
+  const remaining = Math.max(0, Math.round((shipment.paymentHistory.amountDue - shipment.paymentHistory.amountPaid) * 100) / 100);
+  if (remaining > 0) {
+    addAdminNotification(
+      "payment_outstanding",
+      `Payment Outstanding for ${shipment.trackingNumber}`,
+      `Logged partial payment of $${amountNum.toFixed(2)}. Remaining outstanding balance: $${remaining.toFixed(2)}.`,
+      { trackingNumber: shipment.trackingNumber, balance: remaining }
+    );
+  } else {
+    addAdminNotification(
+      "shipment_updated",
+      `Payment Completed for ${shipment.trackingNumber}`,
+      `Successful payment of $${amountNum.toFixed(2)} recorded. Balance fully paid off ($0.00 outstanding).`,
+      { trackingNumber: shipment.trackingNumber }
+    );
+  }
+
   res.json({ success: true, shipment, transaction: newTx });
+});
+
+// API: Get all audit logs
+app.get("/api/audit-logs", (req, res) => {
+  try {
+    const logs = readAuditLogs();
+    res.json({ success: true, logs });
+  } catch (err: any) {
+    console.error("Error reading audit logs:", err);
+    res.status(500).json({ success: false, message: "Failed to read audit logs: " + (err.message || err) });
+  }
+});
+
+// API: Create a custom audit log entry
+app.post("/api/audit-logs", (req, res) => {
+  try {
+    const { action, oldValue, newValue } = req.body;
+    const adminEmail = req.headers["x-admin-email"] || req.body.adminEmail || "admin@shipplix.com";
+    const log = addAuditLog(
+      adminEmail as string,
+      action,
+      oldValue,
+      newValue
+    );
+    res.status(201).json({ success: true, log });
+  } catch (err: any) {
+    console.error("Error creating custom audit log:", err);
+    res.status(500).json({ success: false, message: "Failed to save audit log: " + (err.message || err) });
+  }
 });
 
 // API: Backups manual trigger

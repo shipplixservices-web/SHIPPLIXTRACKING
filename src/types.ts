@@ -53,6 +53,15 @@ export interface AuditLogEntry {
   author?: string;
 }
 
+export interface AdminAuditLog {
+  id: string;
+  admin: string;
+  timestamp: string;
+  action: string;
+  oldValue: string;
+  newValue: string;
+}
+
 export interface Shipment {
   trackingNumber: string; // SPX-YYYYMMDD-XXXX
   referenceNumber: string;
@@ -275,3 +284,24 @@ export const MILESTONES = [
     description: "The tracking record is closed and archived after final resolution or delivery completion."
   }
 ];
+
+export interface AdminNotification {
+  id: string;
+  type: "payment_outstanding" | "shipment_delayed" | "shipment_delivered" | "customer_created" | "shipment_updated" | "admin_login" | "system_error";
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  meta?: {
+    trackingNumber?: string;
+    balance?: number;
+    senderName?: string;
+    milestoneIndex?: number;
+    milestoneName?: string;
+    shipmentHealth?: string;
+    delayStatus?: string;
+    email?: string;
+    documentName?: string;
+    documentType?: string;
+  };
+}

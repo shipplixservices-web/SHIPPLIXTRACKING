@@ -27,7 +27,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-gray-900 flex flex-col selection:bg-[#FFD700] selection:text-[#032B73]">
+    <div className="min-h-screen bg-brand-bg text-brand-text-primary flex flex-col selection:bg-brand-yellow selection:text-brand-blue">
       
       {/* Main branded Navigation Bar */}
       <Navbar currentView={currentView} onViewChange={handleViewChange} />
@@ -42,7 +42,7 @@ export default function App() {
       </main>
 
       {/* Corporate Shipplix Brand Footer */}
-      <footer className="bg-slate-900 text-white border-t-4 border-[#FFD700] mt-auto">
+      <footer className="bg-slate-900 text-white border-t-4 border-brand-yellow mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             
@@ -58,7 +58,7 @@ export default function App() {
 
             {/* Column 2: Logistics Services */}
             <div className="space-y-3 font-mono text-xs">
-              <h4 className="font-sans font-bold text-sm text-[#FFD700] uppercase tracking-wider">Cargo Fleets</h4>
+              <h4 className="font-sans font-bold text-sm text-brand-yellow uppercase tracking-wider">Cargo Fleets</h4>
               <ul className="space-y-1.5 text-gray-400">
                 <li className="hover:text-white transition-colors">• Express Air Cargo (3-5 days)</li>
                 <li className="hover:text-white transition-colors">• Standard Air Freight (5-7 days)</li>
@@ -69,7 +69,7 @@ export default function App() {
 
             {/* Column 3: Global Offices */}
             <div className="space-y-3 font-mono text-xs">
-              <h4 className="font-sans font-bold text-sm text-[#FFD700] uppercase tracking-wider">Lagos Export Center</h4>
+              <h4 className="font-sans font-bold text-sm text-brand-yellow uppercase tracking-wider">Lagos Export Center</h4>
               <p className="text-gray-400 leading-relaxed">
                 Shipplix Export Hub,<br />
                 Lagos International Airport Road,<br />
@@ -80,10 +80,10 @@ export default function App() {
 
             {/* Column 4: Customer Support Helpdesk */}
             <div className="space-y-3 font-mono text-xs">
-              <h4 className="font-sans font-bold text-sm text-[#FFD700] uppercase tracking-wider">24/7 Security Hotline</h4>
+              <h4 className="font-sans font-bold text-sm text-brand-yellow uppercase tracking-wider">24/7 Security Hotline</h4>
               <div className="space-y-2 text-gray-400">
                 <p className="flex items-center space-x-2">
-                  <Mail className="h-4 w-4 text-[#FFD700]" />
+                  <Mail className="h-4 w-4 text-brand-yellow" />
                   <span>hello@shipplix.com</span>
                 </p>
                 <a 
@@ -92,8 +92,8 @@ export default function App() {
                   rel="noopener noreferrer"
                   className="flex items-center space-x-2 hover:opacity-80 transition-opacity w-fit"
                 >
-                  <MessageSquare className="h-4 w-4 text-emerald-400 animate-pulse" />
-                  <span className="text-emerald-400 font-bold">WhatsApp: +234 916 827 3513</span>
+                  <MessageSquare className="h-4 w-4 text-brand-success animate-pulse" />
+                  <span className="text-brand-success font-bold">WhatsApp: +234 916 827 3513</span>
                 </a>
               </div>
             </div>

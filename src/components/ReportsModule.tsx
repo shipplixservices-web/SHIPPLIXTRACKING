@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { Shipment, MILESTONES } from "../types.js";
 import { parseShipmentNotesAndFinance } from "../utils/financeUtils.ts";
+import { formatCurrency, getCurrencySymbol } from "../utils/currencyUtils.ts";
+import { shipmentService } from "../services/shipmentService.ts";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
@@ -20,6 +22,7 @@ interface ReportsModuleProps {
 type ReportType = "revenue" | "shipment" | "customer" | "outstanding" | "profit";
 
 export default function ReportsModule({ shipments, loading }: ReportsModuleProps) {
+  const symbol = getCurrencySymbol();
   // 1. Report Type Selection
   const [activeReport, setActiveReport] = useState<ReportType>("revenue");
 
@@ -412,6 +415,13 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Record action
+    shipmentService.logAdminAction(
+      "Generate Report",
+      "-",
+      `Exported ${activeReport.toUpperCase()} report with ${reportDataset.length} records to CSV format`
+    );
   };
 
   // EXPORT 2: Excel Optimized Tab Delimited HTML Export
@@ -422,7 +432,7 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
     let reportTitle = `${activeReport.toUpperCase()} REPORT - SHIPPLIX LEDGER`;
 
     if (activeReport === "revenue") {
-      tableHeaders = "<tr><th>Tracking Number</th><th>Reference</th><th>Booking Date</th><th>Sender</th><th>Receiver</th><th>Payment Status</th><th>Shipping Fee ($)</th><th>Total Charged ($)</th><th>Amount Paid ($)</th><th>Balance Due ($)</th></tr>";
+      tableHeaders = `<tr><th>Tracking Number</th><th>Reference</th><th>Booking Date</th><th>Sender</th><th>Receiver</th><th>Payment Status</th><th>Shipping Fee (${symbol})</th><th>Total Charged (${symbol})</th><th>Amount Paid (${symbol})</th><th>Balance Due (${symbol})</th></tr>`;
       tableRows = reportDataset.map(item => `
         <tr>
           <td>${item.shipment.trackingNumber}</td>
@@ -471,7 +481,7 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
         }
       });
 
-      tableHeaders = "<tr><th>Customer Name</th><th>Total Bookings</th><th>Aggregate Weight (KG)</th><th>Total Billing ($)</th><th>Total Paid ($)</th><th>Outstanding Balance ($)</th><th>Last Booking Date</th></tr>";
+      tableHeaders = `<tr><th>Customer Name</th><th>Total Bookings</th><th>Aggregate Weight (KG)</th><th>Total Billing (${symbol})</th><th>Total Paid (${symbol})</th><th>Outstanding Balance (${symbol})</th><th>Last Booking Date</th></tr>`;
       tableRows = Object.entries(customerMap).map(([name, data]: [string, any]) => `
         <tr>
           <td>${name}</td>
@@ -484,7 +494,7 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
         </tr>
       `).join("");
     } else if (activeReport === "outstanding") {
-      tableHeaders = "<tr><th>Tracking Number</th><th>Customer Name</th><th>Booking Date</th><th>Service Type</th><th>Total Billings ($)</th><th>Amount Paid ($)</th><th>Outstanding Arrears ($)</th><th>Payment Status</th></tr>";
+      tableHeaders = `<tr><th>Tracking Number</th><th>Customer Name</th><th>Booking Date</th><th>Service Type</th><th>Total Billings (${symbol})</th><th>Amount Paid (${symbol})</th><th>Outstanding Arrears (${symbol})</th><th>Payment Status</th></tr>`;
       tableRows = reportDataset.filter(i => i.finance.balance > 0).map(item => `
         <tr>
           <td>${item.shipment.trackingNumber}</td>
@@ -498,7 +508,7 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
         </tr>
       `).join("");
     } else { // profit
-      tableHeaders = "<tr><th>Tracking Number</th><th>Customer Name</th><th>Booking Date</th><th>Service Type</th><th>Revenue ($)</th><th>Operating Expense ($)</th><th>Net Profit ($)</th><th>Profit Margin (%)</th></tr>";
+      tableHeaders = `<tr><th>Tracking Number</th><th>Customer Name</th><th>Booking Date</th><th>Service Type</th><th>Revenue (${symbol})</th><th>Operating Expense (${symbol})</th><th>Net Profit (${symbol})</th><th>Profit Margin (%)</th></tr>`;
       tableRows = reportDataset.map(item => {
         const margin = item.finance.totalCharged > 0 ? ((item.finance.profit / item.finance.totalCharged) * 100).toFixed(1) : "0.0";
         return `
@@ -547,6 +557,13 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Record action
+    shipmentService.logAdminAction(
+      "Generate Report",
+      "-",
+      `Exported ${activeReport.toUpperCase()} report with ${reportDataset.length} records to Excel format`
+    );
   };
 
   // EXPORT 3: PDF Generation (jspdf & jspdf-autotable)
@@ -611,11 +628,11 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
         item.shipment.senderName.split("(")[0].trim(),
         item.shipment.receiverName,
         item.finance.paymentStatus,
-        `$${item.finance.shippingFee.toFixed(2)}`,
-        `$${(item.finance.packagingFee + item.finance.pickupFee + item.finance.insurance + item.finance.customCharge + item.finance.otherCharges).toFixed(2)}`,
-        `$${item.finance.discount.toFixed(2)}`,
-        `$${item.finance.totalCharged.toFixed(2)}`,
-        `$${item.finance.amountPaid.toFixed(2)}`
+        `${symbol}${item.finance.shippingFee.toFixed(2)}`,
+        `${symbol}${(item.finance.packagingFee + item.finance.pickupFee + item.finance.insurance + item.finance.customCharge + item.finance.otherCharges).toFixed(2)}`,
+        `${symbol}${item.finance.discount.toFixed(2)}`,
+        `${symbol}${item.finance.totalCharged.toFixed(2)}`,
+        `${symbol}${item.finance.amountPaid.toFixed(2)}`
       ]);
     } else if (activeReport === "shipment") {
       tableHeaders = ["Tracking ID", "Booking Date", "Sender", "Receiver", "Origin", "Destination", "Service", "Weight", "Packages", "Status"];
@@ -653,9 +670,9 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
         name,
         data.bookings.toString(),
         data.totalWeight.toFixed(1),
-        `$${data.spend.toFixed(2)}`,
-        `$${data.paid.toFixed(2)}`,
-        `$${data.balance.toFixed(2)}`,
+        `${symbol}${data.spend.toFixed(2)}`,
+        `${symbol}${data.paid.toFixed(2)}`,
+        `${symbol}${data.balance.toFixed(2)}`,
         data.lastDate
       ]);
     } else if (activeReport === "outstanding") {
@@ -665,9 +682,9 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
         item.shipment.senderName.split("(")[0].trim(),
         item.shipment.bookingDate,
         item.shipment.serviceType,
-        `$${item.finance.totalCharged.toFixed(2)}`,
-        `$${item.finance.amountPaid.toFixed(2)}`,
-        `$${item.finance.balance.toFixed(2)}`,
+        `${symbol}${item.finance.totalCharged.toFixed(2)}`,
+        `${symbol}${item.finance.amountPaid.toFixed(2)}`,
+        `${symbol}${item.finance.balance.toFixed(2)}`,
         item.finance.paymentStatus
       ]);
     } else { // profit
@@ -679,9 +696,9 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
           item.shipment.senderName.split("(")[0].trim(),
           item.shipment.bookingDate,
           item.shipment.serviceType,
-          `$${item.finance.totalCharged.toFixed(2)}`,
-          `$${item.finance.actualCost.toFixed(2)}`,
-          `$${item.finance.profit.toFixed(2)}`,
+          `${symbol}${item.finance.totalCharged.toFixed(2)}`,
+          `${symbol}${item.finance.actualCost.toFixed(2)}`,
+          `${symbol}${item.finance.profit.toFixed(2)}`,
           margin + "%"
         ];
       });
@@ -731,6 +748,13 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
 
     // Save File
     doc.save(`shipplix_${activeReport}_report_${new Date().toISOString().split('T')[0]}.pdf`);
+
+    // Record action
+    shipmentService.logAdminAction(
+      "Generate Report",
+      "-",
+      `Exported ${activeReport.toUpperCase()} report with ${reportDataset.length} records to PDF format`
+    );
   };
 
   return (
@@ -1032,7 +1056,7 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
                   <YAxis tick={{ fontSize: 10, fontFamily: "monospace" }} />
                   <Tooltip contentStyle={{ fontSize: 11, fontFamily: "monospace" }} />
                   <Legend wrapperStyle={{ fontSize: 10, fontFamily: "monospace" }} />
-                  <Area type="monotone" dataKey="Revenue" stroke="#032B73" fillOpacity={1} fill="url(#colorRev)" />
+                  <Area name={`Revenue (${symbol})`} type="monotone" dataKey="Revenue" stroke="#032B73" fillOpacity={1} fill="url(#colorRev)" />
                 </AreaChart>
               ) : activeReport === "profit" ? (
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
@@ -1041,9 +1065,9 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
                   <YAxis tick={{ fontSize: 10, fontFamily: "monospace" }} />
                   <Tooltip contentStyle={{ fontSize: 11, fontFamily: "monospace" }} />
                   <Legend wrapperStyle={{ fontSize: 10, fontFamily: "monospace" }} />
-                  <Bar dataKey="Revenue" fill="#032B73" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Cost" fill="#94A3B8" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Profit" fill="#10B981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Revenue" name={`Revenue (${symbol})`} fill="#032B73" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Cost" name={`Cost (${symbol})`} fill="#94A3B8" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Profit" name={`Profit (${symbol})`} fill="#10B981" radius={[4, 4, 0, 0]} />
                 </BarChart>
               ) : activeReport === "shipment" ? (
                 <PieChart>
@@ -1069,7 +1093,7 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
                   <XAxis type="number" tick={{ fontSize: 10, fontFamily: "monospace" }} />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fontFamily: "monospace" }} width={100} />
                   <Tooltip contentStyle={{ fontSize: 11, fontFamily: "monospace" }} />
-                  <Bar dataKey="spend" name="Gross Billings ($)" fill="#032B73" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="spend" name={`Gross Billings (${symbol})`} fill="#032B73" radius={[0, 4, 4, 0]} />
                 </BarChart>
               ) : ( // outstanding
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
@@ -1078,8 +1102,8 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
                   <YAxis tick={{ fontSize: 10, fontFamily: "monospace" }} />
                   <Tooltip contentStyle={{ fontSize: 11, fontFamily: "monospace" }} />
                   <Legend wrapperStyle={{ fontSize: 10, fontFamily: "monospace" }} />
-                  <Bar dataKey="Amount Paid" fill="#10B981" stackId="a" />
-                  <Bar dataKey="Balance Due" fill="#EF4444" stackId="a" />
+                  <Bar dataKey="Amount Paid" name={`Amount Paid (${symbol})`} fill="#10B981" stackId="a" />
+                  <Bar dataKey="Balance Due" name={`Balance Due (${symbol})`} fill="#EF4444" stackId="a" />
                 </BarChart>
               )}
             </ResponsiveContainer>
@@ -1174,19 +1198,19 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
                           </span>
                         </td>
                         <td className="py-3 px-4 text-right font-mono text-slate-700">
-                          ${item.finance.shippingFee.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatCurrency(item.finance.shippingFee)}
                         </td>
                         <td className="py-3 px-4 text-right font-mono text-slate-700">
-                          ${extraCharges.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatCurrency(extraCharges)}
                         </td>
                         <td className="py-3 px-4 text-right font-mono text-red-500 font-bold">
-                          {item.finance.discount > 0 ? `-$${item.finance.discount.toLocaleString()}` : "$0.00"}
+                          {item.finance.discount > 0 ? `-${formatCurrency(item.finance.discount)}` : formatCurrency(0)}
                         </td>
                         <td className="py-3 px-4 text-right font-mono font-black text-slate-900">
-                          ${item.finance.totalCharged.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatCurrency(item.finance.totalCharged)}
                         </td>
                         <td className="py-3 px-4 text-right font-mono font-black text-emerald-600">
-                          ${item.finance.amountPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatCurrency(item.finance.amountPaid)}
                         </td>
                       </tr>
                     );
@@ -1303,16 +1327,16 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
                           {customer.totalWeight.toLocaleString(undefined, { maximumFractionDigits: 1 })} KG
                         </td>
                         <td className="py-3.5 px-4 text-right font-mono font-black text-slate-900">
-                          ${customer.spend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatCurrency(customer.spend)}
                         </td>
                         <td className="py-3.5 px-4 text-right font-mono font-semibold text-emerald-600">
-                          ${customer.paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatCurrency(customer.paid)}
                         </td>
                         <td className={`py-3.5 px-4 text-right font-mono font-bold ${customer.balance > 0 ? "text-red-500 bg-red-50/10" : "text-gray-500"}`}>
-                          ${customer.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatCurrency(customer.balance)}
                         </td>
                         <td className="py-3.5 px-4 text-right font-mono text-slate-600">
-                          ${avgSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatCurrency(avgSpend)}
                         </td>
                         <td className="py-3.5 px-4 text-center font-mono text-gray-500">
                           {customer.lastDate}
@@ -1363,13 +1387,13 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
                         {item.shipment.serviceType}
                       </td>
                       <td className="py-3 px-4 text-right font-mono text-slate-700">
-                        ${item.finance.totalCharged.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {formatCurrency(item.finance.totalCharged)}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-semibold text-emerald-600">
-                        ${item.finance.amountPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {formatCurrency(item.finance.amountPaid)}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-black text-red-600 bg-red-50/10">
-                        ${item.finance.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {formatCurrency(item.finance.balance)}
                       </td>
                       <td className="py-3 px-4">
                         <span className="text-[10px] font-bold text-slate-700">
@@ -1422,13 +1446,13 @@ export default function ReportsModule({ shipments, loading }: ReportsModuleProps
                           {item.shipment.serviceType}
                         </td>
                         <td className="py-3 px-4 text-right font-mono font-black text-slate-800">
-                          ${item.finance.totalCharged.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatCurrency(item.finance.totalCharged)}
                         </td>
                         <td className="py-3 px-4 text-right font-mono text-slate-500">
-                          ${item.finance.actualCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatCurrency(item.finance.actualCost)}
                         </td>
                         <td className="py-3 px-4 text-right font-mono font-black text-emerald-600 bg-emerald-50/10">
-                          ${item.finance.profit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {formatCurrency(item.finance.profit)}
                         </td>
                         <td className={`py-3 px-4 text-right font-mono font-bold ${margin >= 40 ? "text-emerald-600" : margin >= 20 ? "text-blue-600" : "text-amber-600"}`}>
                           {margin.toFixed(1)}%

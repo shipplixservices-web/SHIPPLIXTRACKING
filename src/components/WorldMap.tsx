@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Globe, Plane, MapPin } from "lucide-react";
+import THEME from "../utils/theme.ts";
 
 interface WorldMapProps {
   origin: string; // e.g., "Nigeria"
@@ -199,7 +200,7 @@ export default function WorldMap({ origin, destination, currentMilestoneIndex, i
               id="active-path"
               d={arcPathData.pathString}
               fill="none"
-              stroke="#ffd700"
+              stroke={THEME.yellow}
               strokeWidth="2"
               strokeDasharray="400"
               strokeDashoffset={400 * (1 - progress)}
@@ -209,8 +210,8 @@ export default function WorldMap({ origin, destination, currentMilestoneIndex, i
 
           {/* Origin Node */}
           <g transform={`translate(${originCoord.x}, ${originCoord.y})`} className="cursor-pointer">
-            <circle r="14" fill="#032B73" opacity="0.3" className="animate-ping" />
-            <circle r="7" fill="#032B73" stroke="#FFD700" strokeWidth="2" />
+            <circle r="14" fill={THEME.blue} opacity="0.3" className="animate-ping" />
+            <circle r="7" fill={THEME.blue} stroke={THEME.yellow} strokeWidth="2" />
             <circle r="3" fill="#ffffff" />
             <text y="24" textAnchor="middle" fill="#94a3b8" fontSize="10" fontWeight="bold" fontFamily="monospace">
               NG (LAGOS)
@@ -219,9 +220,9 @@ export default function WorldMap({ origin, destination, currentMilestoneIndex, i
 
           {/* Destination Node */}
           <g transform={`translate(${destCoord.x}, ${destCoord.y})`} className="cursor-pointer">
-            <circle r="14" fill="#FFD700" opacity="0.2" className="animate-ping" />
-            <circle r="7" fill="#FFD700" stroke="#032B73" strokeWidth="2" />
-            <circle r="3" fill="#032B73" />
+            <circle r="14" fill={THEME.yellow} opacity="0.2" className="animate-ping" />
+            <circle r="7" fill={THEME.yellow} stroke={THEME.blue} strokeWidth="2" />
+            <circle r="3" fill={THEME.blue} />
             <text y="-16" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold" fontFamily="monospace">
               {destinationCode}
             </text>
@@ -233,13 +234,13 @@ export default function WorldMap({ origin, destination, currentMilestoneIndex, i
             className="transition-transform duration-500 ease-out"
           >
             {/* Glowing Tracking Ring */}
-            <circle r="18" fill={isPaused ? "#ef4444" : "#ffd700"} opacity="0.25" className="animate-pulse" />
-            <circle r="10" fill={isPaused ? "#ef4444" : "#032B73"} stroke={isPaused ? "#fca5a5" : "#ffd700"} strokeWidth="1.5" />
+            <circle r="18" fill={isPaused ? "#ef4444" : THEME.yellow} opacity="0.25" className="animate-pulse" />
+            <circle r="10" fill={isPaused ? "#ef4444" : THEME.blue} stroke={isPaused ? "#fca5a5" : THEME.yellow} strokeWidth="1.5" />
             
             {/* Delivery Airplane Icon */}
             <path 
               d="M12 2l3 9h-3l-2-4-2 4h-3z" 
-              fill={isPaused ? "#ffffff" : "#ffd700"} 
+              fill={isPaused ? "#ffffff" : THEME.yellow} 
               transform="scale(0.8) translate(-6, -6)"
             />
           </g>

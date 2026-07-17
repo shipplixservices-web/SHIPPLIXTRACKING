@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Shipment, DashboardStats, MILESTONES } from "../types.js";
 import { shipmentService, CreateShipmentInput } from "../services/shipmentService.ts";
 import { getTodayStr } from "../utils/dateUtils.ts";
+import { formatCurrency } from "../utils/currencyUtils.ts";
 
 export function useShipments(isAuthenticated: boolean) {
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -294,7 +295,7 @@ export function useShipments(isAuthenticated: boolean) {
     setActionLoading("add-transaction");
     try {
       const updated = await shipmentService.addPaymentTransaction(trackingNumber, tx);
-      showSystemMessage("success", `Payment transaction of $${tx.amount} registered.`);
+      showSystemMessage("success", `Payment transaction of ${formatCurrency(tx.amount)} registered.`);
       await fetchDashboardData();
       return updated;
     } catch (err: any) {

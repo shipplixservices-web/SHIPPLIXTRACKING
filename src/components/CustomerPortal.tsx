@@ -100,7 +100,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
   return (
     <div className="space-y-8">
       {/* Search Header Container */}
-      <section className="bg-gradient-to-br from-[#032B73] to-[#043e9e] text-white py-12 px-4 sm:px-6 lg:px-8 rounded-2xl shadow-lg border-b-4 border-[#FFD700] relative overflow-hidden">
+      <section className="bg-gradient-to-br from-brand-blue to-blue-900 text-white py-12 px-4 sm:px-6 lg:px-8 rounded-2xl shadow-lg border-b-4 border-brand-yellow relative overflow-hidden">
         {/* Subtle geometric design pattern */}
         <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#ffd700_1px,transparent_1px)] [background-size:16px_16px]" />
         
@@ -130,14 +130,14 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
                 placeholder="Enter Tracking Number (Example: SPX-20260625-5522)"
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
-                className="block w-full pl-11 pr-4 py-4 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#FFD700] font-bold text-sm sm:text-base shadow-inner border border-gray-200"
+                className="block w-full pl-11 pr-4 py-4 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-brand-yellow font-bold text-sm sm:text-base shadow-inner border border-gray-200"
               />
             </div>
             <button
               id="track-submit-btn"
               type="submit"
               disabled={loading}
-              className="bg-[#FFD700] text-[#032B73] hover:bg-yellow-400 active:scale-98 transition-all px-8 py-4 rounded-xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-md shrink-0"
+              className="bg-brand-yellow text-brand-blue hover:bg-brand-yellow-dark active:scale-98 transition-all px-8 py-4 rounded-xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-md shrink-0"
             >
               {loading ? (
                 <RefreshCw className="h-5 w-5 animate-spin" />
@@ -166,7 +166,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
                   }}
                   className="bg-white/10 hover:bg-white/20 hover:text-white text-blue-100 text-xs px-3.5 py-2 rounded-lg border border-white/10 font-mono transition-all flex items-center space-x-1.5"
                 >
-                  <span className="font-bold text-[#FFD700]">{t.num}</span>
+                  <span className="font-bold text-brand-yellow">{t.num}</span>
                   <span className="opacity-65 text-[10px] sm:inline hidden">| {t.desc}</span>
                 </button>
               ))}
@@ -194,7 +194,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-mono font-bold tracking-widest text-[#032B73] bg-blue-50 px-2.5 py-1 rounded border border-blue-100">
+                <span className="text-xs font-mono font-bold tracking-widest text-brand-blue bg-blue-50 px-2.5 py-1 rounded border border-blue-100">
                   REF: {shipment.referenceNumber}
                 </span>
                 {shipment.isPaused && (
@@ -203,7 +203,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
                   </span>
                 )}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#032B73] font-mono flex items-center space-x-3">
+              <h2 className="text-2xl sm:text-3xl font-black text-brand-blue font-mono flex items-center space-x-3">
                 <span>{shipment.trackingNumber}</span>
               </h2>
               <p className="text-xs text-gray-500">
@@ -233,7 +233,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div className="flex justify-between items-center mb-2 text-xs font-mono">
               <span className="text-gray-500 font-bold">SHIPMENT EN ROUTE</span>
-              <span className="text-[#032B73] font-extrabold">{progressPercent}% COMPLETED</span>
+              <span className="text-brand-blue font-extrabold">{progressPercent}% COMPLETED</span>
             </div>
             
             {/* Real Progress Bar */}
@@ -242,7 +242,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
                 className={`h-full rounded-full transition-all duration-1000 ease-out relative ${
                   shipment.isPaused 
                     ? "bg-gradient-to-r from-red-500 to-red-600" 
-                    : "bg-gradient-to-r from-[#032B73] to-[#3b82f6]"
+                    : "bg-gradient-to-r from-brand-blue to-blue-500"
                 }`}
                 style={{ width: `${progressPercent}%` }}
               >
@@ -276,9 +276,9 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
             </div>
 
           {/* Shipment Details Card */}
-          <div className="bg-[#032B73] text-white rounded-xl p-6 shadow-md border-b-4 border-[#FFD700] space-y-6">
+          <div className="bg-brand-blue text-white rounded-xl p-6 shadow-md border-b-4 border-brand-yellow space-y-6">
             <h3 className="text-lg font-black tracking-tight border-b border-white/10 pb-3 flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-[#FFD700]" />
+              <FileText className="h-5 w-5 text-brand-yellow" />
               <span>Shipment Specs</span>
             </h3>
 
@@ -300,7 +300,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
 
               <div className="flex justify-between py-1 border-b border-white/5">
                 <span className="text-blue-200">Destination Port:</span>
-                <span className="font-bold text-[#FFD700] text-right flex items-center">
+                <span className="font-bold text-brand-yellow text-right flex items-center">
                   <MapPin className="h-3.5 w-3.5 mr-1" />
                   {shipment.destinationCountry} {shipment.portGateway ? `(${shipment.portGateway})` : ""}
                 </span>
@@ -331,7 +331,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
 
                 <div className="flex justify-between py-1">
                   <span className="text-blue-200">Est. Arrival Gate:</span>
-                  <span className="font-bold text-[#FFD700] text-right flex items-center">
+                  <span className="font-bold text-brand-yellow text-right flex items-center">
                     <Calendar className="h-3.5 w-3.5 mr-1" />
                     {formatSimpleDate(shipment.expectedDeliveryDate)}
                   </span>
@@ -367,7 +367,7 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
       {!shipment && (
         <section className="bg-slate-50 border border-gray-100 rounded-2xl p-8 max-w-5xl mx-auto space-y-8">
           <div className="text-center max-w-xl mx-auto space-y-2">
-            <h2 className="text-xl sm:text-2xl font-black text-[#032B73]">
+            <h2 className="text-xl sm:text-2xl font-black text-brand-blue">
               The Shipplix Logistics Promise
             </h2>
             <p className="text-xs sm:text-sm text-gray-500">

@@ -130,7 +130,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     operations: "+1 (713) 555-0188"
   },
   currencies: {
-    baseCurrency: "USD ($)",
+    baseCurrency: "NGN (₦)",
     allowedCurrencies: ["USD ($)", "EUR (€)", "GBP (£)", "NGN (₦)", "CNY (¥)"]
   },
   countries: {
@@ -189,6 +189,16 @@ export function getAppSettings(): AppSettings {
       return DEFAULT_SETTINGS;
     }
     const parsed = JSON.parse(data);
+    // Auto-migrate legacy "USD ($)" default baseCurrency to "NGN (₦)" once for consistent evaluation
+    if (parsed.currencies && parsed.currencies.baseCurrency === "USD ($)" && !parsed.currencies.migratedToNgn) {
+      parsed.currencies.baseCurrency = "NGN (₦)";
+      parsed.currencies.migratedToNgn = true;
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsed));
+      } catch (e) {
+        console.error("Failed to persist auto-migrated settings", e);
+      }
+    }
     // Deep merge to ensure newly added properties don't cause crashes
     return {
       company: { ...DEFAULT_SETTINGS.company, ...parsed.company },

@@ -6,6 +6,7 @@ import {
   ShipmentDocument, 
   PaymentTransaction 
 } from "../types.js";
+import { formatCurrency, getCurrencySymbol } from "../utils/currencyUtils.ts";
 import { 
   CheckCircle2, 
   AlertTriangle, 
@@ -566,7 +567,7 @@ export const ShipmentManagementHub: React.FC<ShipmentManagementHubProps> = ({
                   id="hub-note-submit-btn"
                   type="submit"
                   disabled={actionLoading === "add-note"}
-                  className="bg-[#032B73] hover:bg-blue-900 text-[#FFD700] px-6 py-2 rounded-lg text-xs font-black shrink-0 transition-all self-end sm:self-auto flex items-center justify-center space-x-1"
+                  className="bg-brand-blue hover:bg-brand-blue-dark text-brand-yellow px-6 py-2 rounded-lg text-xs font-black shrink-0 transition-all self-end sm:self-auto flex items-center justify-center space-x-1"
                 >
                   {actionLoading === "add-note" ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
@@ -698,7 +699,7 @@ export const ShipmentManagementHub: React.FC<ShipmentManagementHubProps> = ({
                     id="hub-doc-submit-btn"
                     type="submit"
                     disabled={actionLoading === "upload-doc"}
-                    className="w-full bg-[#032B73] hover:bg-blue-900 text-[#FFD700] text-xs font-black py-2.5 rounded-lg transition-all flex items-center justify-center space-x-1"
+                    className="w-full bg-brand-blue hover:bg-brand-blue-dark text-brand-yellow text-xs font-black py-2.5 rounded-lg transition-all flex items-center justify-center space-x-1"
                   >
                     {actionLoading === "upload-doc" ? (
                       <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -717,7 +718,7 @@ export const ShipmentManagementHub: React.FC<ShipmentManagementHubProps> = ({
             <div className="lg:col-span-2 space-y-4">
               <div className="border border-gray-100 rounded-xl p-5 bg-white space-y-3">
                 <h3 className="text-xs font-bold text-gray-900 font-mono uppercase tracking-wider flex items-center space-x-1.5">
-                  <FileText className="h-4 w-4 text-[#032B73]" />
+                  <FileText className="h-4 w-4 text-brand-blue" />
                   <span>Verified Document Registry</span>
                 </h3>
 
@@ -771,7 +772,7 @@ export const ShipmentManagementHub: React.FC<ShipmentManagementHubProps> = ({
                                 alert(`Simulated Download of: ${doc.name}. Documents registered correctly!`);
                               }
                             }}
-                            className="bg-gray-100 hover:bg-[#032B73] text-gray-600 hover:text-white p-1.5 rounded transition-all text-xs"
+                            className="bg-gray-100 hover:bg-brand-blue text-gray-600 hover:text-white p-1.5 rounded transition-all text-xs"
                             title="Download Link"
                           >
                             Download
@@ -801,7 +802,7 @@ export const ShipmentManagementHub: React.FC<ShipmentManagementHubProps> = ({
               {/* Payment Summary Metrics */}
               <div className="border border-gray-200 rounded-xl p-5 bg-slate-50 space-y-4">
                 <h3 className="text-xs font-bold text-gray-900 font-mono uppercase tracking-wider flex items-center space-x-1.5 border-b border-gray-200 pb-2">
-                  <CreditCard className="h-4 w-4 text-[#032B73]" />
+                  <CreditCard className="h-4 w-4 text-brand-blue" />
                   <span>Ledger Status Summary</span>
                 </h3>
 
@@ -821,18 +822,18 @@ export const ShipmentManagementHub: React.FC<ShipmentManagementHubProps> = ({
 
                   <div className="flex justify-between border-b border-gray-150 pb-2 font-bold text-sm text-gray-900">
                     <span className="text-gray-500 text-xs font-semibold">TOTAL AMOUNT DUE:</span>
-                    <span>${shipment.paymentHistory?.amountDue.toFixed(2) || "0.00"}</span>
+                    <span>{formatCurrency(shipment.paymentHistory?.amountDue || 0)}</span>
                   </div>
 
                   <div className="flex justify-between border-b border-gray-150 pb-2 font-bold text-emerald-700">
                     <span className="text-gray-500 font-semibold text-xs">TOTAL AMOUNT PAID:</span>
-                    <span>${shipment.paymentHistory?.amountPaid.toFixed(2) || "0.00"}</span>
+                    <span>{formatCurrency(shipment.paymentHistory?.amountPaid || 0)}</span>
                   </div>
 
                   <div className="flex justify-between font-bold text-red-700">
                     <span className="text-gray-500 font-semibold text-xs">OUTSTANDING BALANCE:</span>
                     <span>
-                      ${Math.max(0, (shipment.paymentHistory?.amountDue || 0) - (shipment.paymentHistory?.amountPaid || 0)).toFixed(2)}
+                      {formatCurrency(Math.max(0, (shipment.paymentHistory?.amountDue || 0) - (shipment.paymentHistory?.amountPaid || 0)))}
                     </span>
                   </div>
                 </div>
@@ -848,7 +849,7 @@ export const ShipmentManagementHub: React.FC<ShipmentManagementHubProps> = ({
                 <form onSubmit={handlePaymentSubmit} className="space-y-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono font-bold text-gray-500 block uppercase">
-                      Payment Amount (USD $)
+                      Payment Amount ({getCurrencySymbol()})
                     </label>
                     <input
                       id="hub-payment-amount"
@@ -912,7 +913,7 @@ export const ShipmentManagementHub: React.FC<ShipmentManagementHubProps> = ({
                     id="hub-payment-submit-btn"
                     type="submit"
                     disabled={actionLoading === "add-transaction"}
-                    className="w-full bg-[#032B73] hover:bg-blue-900 text-[#FFD700] text-xs font-black py-2.5 rounded-lg transition-all flex items-center justify-center space-x-1"
+                    className="w-full bg-brand-blue hover:bg-brand-blue-dark text-brand-yellow text-xs font-black py-2.5 rounded-lg transition-all flex items-center justify-center space-x-1"
                   >
                     {actionLoading === "add-transaction" ? (
                       <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -932,7 +933,7 @@ export const ShipmentManagementHub: React.FC<ShipmentManagementHubProps> = ({
             <div className="lg:col-span-2 space-y-4">
               <div className="border border-gray-200 rounded-xl p-5 bg-white space-y-3">
                 <h3 className="text-xs font-bold text-gray-900 font-mono uppercase tracking-wider flex items-center space-x-1.5">
-                  <History className="h-4 w-4 text-[#032B73]" />
+                  <History className="h-4 w-4 text-brand-blue" />
                   <span>Payment Transactions Ledger</span>
                 </h3>
 
@@ -951,14 +952,14 @@ export const ShipmentManagementHub: React.FC<ShipmentManagementHubProps> = ({
                         shipment.paymentHistory.transactions.map((tx) => (
                           <tr key={tx.id} className="hover:bg-slate-50/50 transition-all font-semibold">
                             <td className="py-2.5 px-3 text-gray-600">{tx.date}</td>
-                            <td className="py-2.5 px-3 text-[#032B73] font-bold">{tx.reference}</td>
+                            <td className="py-2.5 px-3 text-brand-blue font-bold">{tx.reference}</td>
                             <td className="py-2.5 px-3 text-gray-700">
                               <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded text-[10px] uppercase">
                                 {tx.method}
                               </span>
                             </td>
                             <td className="py-2.5 px-3 text-right text-emerald-700 font-bold">
-                              ${tx.amount.toFixed(2)}
+                              {formatCurrency(tx.amount)}
                             </td>
                           </tr>
                         ))
