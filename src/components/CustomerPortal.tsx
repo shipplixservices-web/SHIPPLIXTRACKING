@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, MapPin, Scale, Package, Calendar, RefreshCw, Send, AlertCircle, FileText, CheckCircle2 } from "lucide-react";
 import { Shipment, MILESTONES } from "../types.js";
 import { supabase, mapDbShipmentToShipment } from "../supabaseClient.js";
 import StaticMap from "./StaticMap.tsx";
 import Timeline from "./Timeline.tsx";
 import ShipplixLogo from "./ShipplixLogo.tsx";
+import LatestShipmentUpdate from "./LatestShipmentUpdate.tsx";
 
 interface CustomerPortalProps {
   initialTrackingQuery?: string;
 }
 
 export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPortalProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [trackingNumber, setTrackingNumber] = useState(initialTrackingQuery);
   const [searchedNumber, setSearchedNumber] = useState("");
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Quick test tracking numbers
@@ -25,13 +29,21 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
     { num: "SPX-20260620-1080", desc: "Delivered - United Kingdom" }
   ];
 
-  const handleTrack = async (numToTrack: string) => {
+  const handleTrack = async (numToTrack: string, isSilentRefresh = false) => {
     const trimmed = numToTrack.trim().toUpperCase();
     if (!trimmed) return;
 
-    setLoading(true);
-    setError(null);
+    if (!isSilentRefresh) {
+      setLoading(true);
+      setShipment(null);
+      setError(null);
+    } else {
+      setIsRefreshing(true);
+    }
     setSearchedNumber(trimmed);
+
+    // Keep URL parameter synchronized with searched tracking number
+    setSearchParams({ track: trimmed }, { replace: true });
 
     try {
       // Query Supabase directly for real-time tracking accuracy
@@ -66,18 +78,74 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
       setError(`Unable to connect to the tracking gateway: ${err?.message || "Check your internet connection and try again."}`);
       setShipment(null);
     } finally {
-      setLoading(false);
+      if (!isSilentRefresh) {
+        setLoading(false);
+      } else {
+        setIsRefreshing(false);
+      }
     }
   };
 
   useEffect(() => {
-    if (initialTrackingQuery) {
+    if (initialTrackingQuery && initialTrackingQuery !== searchedNumber) {
       setTrackingNumber(initialTrackingQuery);
       handleTrack(initialTrackingQuery);
     }
   }, [initialTrackingQuery]);
 
-  // Calculate percentage progress for the top simple progress bar
+  // Real-time subscription and polling to keep preview and tracking history synced with database
+  useEffect(() => {
+    if (!searchedNumber) return;
+
+    // Real-time Supabase postgres_changes channel
+    const channel = supabase
+      .channel(`shipments-tracker-${searchedNumber}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "shipments",
+          filter: `tracking_number=eq.${searchedNumber}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            const mapped = mapDbShipmentToShipment(payload.new);
+            if (mapped) {
+              setShipment(mapped);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // Secondary polling interval (every 15s) for resilient auto-refresh
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data, error: pollError } = await supabase
+          .from("shipments")
+          .select("*")
+          .eq("tracking_number", searchedNumber)
+          .maybeSingle();
+
+        if (data && !pollError) {
+          const mapped = mapDbShipmentToShipment(data);
+          if (mapped) {
+            setShipment(mapped);
+          }
+        }
+      } catch (e) {
+        // Silent background refresh
+      }
+    }, 15000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+    };
+  }, [searchedNumber]);
+
+  // Calculate percentage progress for the lower progress bar
   const progressPercent = shipment 
     ? Math.min(Math.round((Math.min(shipment.currentMilestoneIndex, 23) / 23) * 100), 100) 
     : 0;
@@ -106,6 +174,18 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
         
         <div className="max-w-3xl mx-auto text-center relative z-10 flex flex-col items-center">
           <ShipplixLogo variant="banner" textColor="text-white" className="mb-6 bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-xs w-full max-w-md shadow-lg" />
+          
+          {/* Compact Latest Shipment Update section directly beneath branding & WhatsApp, above heading */}
+          {(loading || shipment) && (
+            <LatestShipmentUpdate
+              shipment={shipment}
+              isLoading={loading}
+              searchedNumber={searchedNumber || trackingNumber}
+              onRefresh={() => handleTrack(searchedNumber || trackingNumber, true)}
+              isRefreshing={isRefreshing}
+            />
+          )}
+
           <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white mb-2">
             Real-Time Cargo Tracking Gateway
           </h1>
