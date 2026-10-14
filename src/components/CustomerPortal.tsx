@@ -145,11 +145,6 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
     };
   }, [searchedNumber]);
 
-  // Calculate percentage progress for the lower progress bar
-  const progressPercent = shipment 
-    ? Math.min(Math.round((Math.min(shipment.currentMilestoneIndex, 23) / 23) * 100), 100) 
-    : 0;
-
   // Format booking/delivery dates beautifully
   const formatSimpleDate = (dateStr?: string) => {
     if (!dateStr) return "";
@@ -306,45 +301,6 @@ export default function CustomerPortal({ initialTrackingQuery = "" }: CustomerPo
               <span className="text-[11px] text-gray-500 font-mono mt-1">
                 Last Update: {new Date(shipment.milestoneHistory[shipment.milestoneHistory.length - 1]?.timestamp || "").toLocaleString()}
               </span>
-            </div>
-          </div>
-
-          {/* Simple Premium Progress Bar */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-2 text-xs font-mono">
-              <span className="text-gray-500 font-bold">SHIPMENT EN ROUTE</span>
-              <span className="text-[#032B73] font-extrabold">{progressPercent}% COMPLETED</span>
-            </div>
-            
-            {/* Real Progress Bar */}
-            <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden relative border border-gray-200/50">
-              <div 
-                className={`h-full rounded-full transition-all duration-1000 ease-out relative ${
-                  shipment.isPaused 
-                    ? "bg-gradient-to-r from-red-500 to-red-600" 
-                    : "bg-gradient-to-r from-[#032B73] to-[#3b82f6]"
-                }`}
-                style={{ width: `${progressPercent}%` }}
-              >
-                {/* Visual gloss effect */}
-                <div className="absolute inset-0 bg-white/20 bg-linear-to-b from-transparent to-black/10" />
-              </div>
-            </div>
-
-            {/* Stage Quick labels */}
-            <div className="grid grid-cols-4 mt-3 text-[10px] sm:text-xs font-mono text-center">
-              <div className="text-left font-bold text-blue-800">
-                Origin Received
-              </div>
-              <div className={`font-bold ${shipment.currentMilestoneIndex >= 18 ? "text-blue-800" : "text-gray-400"}`}>
-                Customs Cleared
-              </div>
-              <div className={`font-bold ${shipment.currentMilestoneIndex >= 13 ? "text-blue-800" : "text-gray-400"}`}>
-                In Transit Flight
-              </div>
-              <div className={`text-right font-bold ${shipment.currentMilestoneIndex === 23 ? "text-emerald-700" : "text-gray-400"}`}>
-                Delivered
-              </div>
             </div>
           </div>
 
