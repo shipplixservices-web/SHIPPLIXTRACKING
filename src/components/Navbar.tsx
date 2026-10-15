@@ -1,12 +1,11 @@
 import React from "react";
-import { Shield, Search, ChevronRight } from "lucide-react";
 
 interface NavbarProps {
   currentView: "customer" | "admin";
   onViewChange: (view: "customer" | "admin") => void;
 }
 
-export default function Navbar({ currentView, onViewChange }: NavbarProps) {
+export default function Navbar({ onViewChange }: NavbarProps) {
   return (
     <header className="bg-[#032B73] text-white shadow-md border-b-4 border-[#FFD700]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,22 +25,6 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* Nav Links */}
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <button
-              id="nav-customer-btn"
-              onClick={() => onViewChange("customer")}
-              className={`flex items-center space-x-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                currentView === "customer"
-                  ? "bg-[#FFD700] text-[#032B73] font-bold shadow-md scale-102"
-                  : "text-white hover:bg-white/10"
-              }`}
-            >
-              <Search className="h-4.5 w-4.5" />
-              <span>Track Parcel</span>
-            </button>
           </div>
         </div>
       </div>
